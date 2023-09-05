@@ -1,0 +1,10 @@
+$ cat .gitignore
+*.[oa]
+*~
+*.obj
+*.log
+*.cfg
+*.dsk
+*.bak
+*.gpi
+.vscode
