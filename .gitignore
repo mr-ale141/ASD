@@ -7,4 +7,5 @@ $ cat .gitignore
 *.dsk
 *.bak
 *.gpi
+*.exe
 .vscode
