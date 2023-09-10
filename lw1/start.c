@@ -70,7 +70,9 @@ int main(void)
     while(NULL != head)
     {
         stack* elt = pop();
-        printf(" %d: %s %d |", count, elt->val, elt->operation_type);
+        printf(" %3d: %s %d |", count, elt->val, elt->operation_type);
+        if (0 == count % 10) printf("\n");
+        free(elt);
         count++;
     }
     return 0;
