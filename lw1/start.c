@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #define MAX_STRING 100                       // postfix string max 100 symbol
 #define SIN_NAME "SIN"
@@ -9,10 +10,10 @@
 
 typedef enum
 {
-    power = 3,
+    stepen = 3,
     func = 3,
-    devide = 2,
-    multiply = 2,
+    delenie = 2,
+    umnozhenie = 2,
     minus = 1,
     plus = 1,
     is_var = 0
@@ -59,13 +60,54 @@ void get_postfix_string(char* str)
 
 int main(void)
 {
-    char postfix_str[MAX_STRING];
+    char postfix_str[MAX_STRING] = {0};
     get_postfix_string(postfix_str);
-    for (int i=0; i<strlen(postfix_str); i++)
+    for (int i = 0; i < strlen(postfix_str); i++)
     {
-        char ch[2] = {postfix_str[i], '\0'};
-        push(ch, is_var);
+        stack* right_elt;
+        stack* left_elt;
+        operation type;
+        char temp[MAX_STRING + MAX_STRING / 2] = {0};
+        char ch = postfix_str[i];
+        if (isalpha(ch))
+        {
+            char ch_str[2] = {ch, '\0'};
+            push(ch_str, is_var);
+        } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^')
+        {
+            right_elt = pop();
+            left_elt = pop();
+            switch (ch)
+            {
+            case '+': type = plus; break;
+            case '-': type = minus; break;
+            case '*': type = umnozhenie; break;
+            case '/': type = delenie; break;
+            case '^': type = stepen; break;
+            }
+            if (left_elt->operation_type != 0 && left_elt->operation_type < type)
+                sprintf(temp, "(%s)%c", left_elt->val, ch);
+            else 
+                sprintf(temp, "%s%c", left_elt->val, ch);
+            if (right_elt->operation_type != 0 && right_elt->operation_type < type)
+            {
+                strcat(temp, "(");
+                strcat(temp, right_elt->val);
+                strcat(temp, ")");
+            } 
+            else 
+            {
+                strcat(temp, right_elt->val);
+            }
+            push(temp, type);
+            free(left_elt);
+            free(right_elt);
+            temp[0] = '\0';
+        }
     }
+    printf("%s\n", (pop())->val);
+    free(head);
+    /*
     int count = 1;
     while(NULL != head)
     {
@@ -75,5 +117,6 @@ int main(void)
         free(elt);
         count++;
     }
+    */
     return 0;
 }
