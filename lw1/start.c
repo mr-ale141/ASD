@@ -73,7 +73,8 @@ int main(void)
         {
             char ch_str[2] = {ch, '\0'};
             push(ch_str, is_var);
-        } else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^')
+        }
+        else if (ch == '+' || ch == '-' || ch == '*' || ch == '/' || ch == '^')
         {
             right_elt = pop();
             left_elt = pop();

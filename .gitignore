@@ -9,3 +9,4 @@ $ cat .gitignore
 *.gpi
 *.exe
 .vscode
+bin
