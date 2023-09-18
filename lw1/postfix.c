@@ -99,7 +99,7 @@ int main(void)
             type = func;
             get_str_befor_space(postfix_str, &i, temp);
             right_elt = pop();
-            if (is_var == right_elt->operation_type)
+            if (is_var == right_elt->operation_type || (type == right_elt->operation_type && NULL == strchr(right_elt->val, '^')))
             {
                 strcat(temp, " ");
                 strcat(temp, right_elt->val);
@@ -187,11 +187,11 @@ int main(void)
             type = stepen;
             right_elt = pop();
             left_elt = pop();
-            if (is_var == left_elt->operation_type)
+            if (is_var == left_elt->operation_type || type == left_elt->operation_type)
                 sprintf(temp, "%s %c ", left_elt->val, postfix_str[i]);
             else
                 sprintf(temp, "(%s) %c ", left_elt->val, postfix_str[i]);
-            if (is_var == right_elt->operation_type)
+            if (is_var == right_elt->operation_type || type == right_elt->operation_type)
                 strcat(temp, right_elt->val);
             else
             {
@@ -205,7 +205,9 @@ int main(void)
             temp[0] = '\0';
         }
     }
-    
+    printf("%s\n", (pop())->val);
+    free(head);
+    /*
     int count = 1;
     while(NULL != head)
     {
@@ -215,6 +217,6 @@ int main(void)
         free(elt);
         count++;
     }
-    
+    */
     return 0;
 }
