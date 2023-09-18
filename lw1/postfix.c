@@ -80,14 +80,9 @@ stack* pop()
 
 void get_postfix_string(char* str)
 {
-    int len = 0;
     printf("Insert postfix string (max %d symbol):\n->: ", MAX_STRING);
-    gets(str);
-    while ((len = (int)strlen(str)) > MAX_STRING)
-    {
-        printf("Max %d symbol, you gave %d symbol(s), try again:\n->: ", MAX_STRING, len);
-        gets(str);
-    }
+    fgets(str, 100, stdin);
+    (*strchr(str, '\n')) = '\0';
 }
 
 void get_str_befor_space(char *in_str, int *i, char *temp)
@@ -113,7 +108,7 @@ void push_infix_in_head(char *postfix_str)
         stack *right_elt;
         stack *left_elt;
         operation type;
-        char temp[MAX_STRING + MAX_STRING / 2] = {0};
+        char temp[2 * MAX_STRING + 3] = {0};
         if (isalpha(postfix_str[i]) && isalpha(postfix_str[i + 1]))
         {
             type = func;
@@ -268,8 +263,7 @@ int get_answer()
             printf("Your answer (%d) is incorrect, correct from 0 to 4, try again.\n", answer);
             print_menu();
         }
-    }
-    while (answer < 0 || answer > 4);
+    } while (answer < 0 || answer > 4);
     while (getchar() != '\n')
         continue;
     return answer;
@@ -407,7 +401,14 @@ int main(void)
             printf("--------------------------------------------------------------\n");
             break;
         case 4:
-            calc(postfix_str);
+            if ('\0' != postfix_str[0])
+                calc(postfix_str);
+            else
+            {
+                printf("--------------------------------------------------------------\n");
+                printf("Postfix string is empty!!!\n");
+                printf("--------------------------------------------------------------\n");
+            }
             break;
         }
         printf("Done!\n");
