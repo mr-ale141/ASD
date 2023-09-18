@@ -5,10 +5,6 @@
     строчной латинской буквой. Запросить значения переменных и
     вычислить выражение. Представить его в инфиксной форме со
     скобками. Лишние скобки присутствовать не должны (11).
-
-    1. Отрицательные числа, переменные
-    2. Минус перед скобками
-    3. Очеред с делением/умножением
 */
 
 #include <stdio.h>
@@ -84,14 +80,12 @@ void get_str_befor_space(char *in_str, int *i, char *temp)
     }
 }
 
-int main(void)
+void push_infix_in_head(char *postfix_str)
 {
-    char postfix_str[MAX_STRING] = {0};
-    get_postfix_string(postfix_str);
     for (int i = 0; i < strlen(postfix_str); i++)
     {
-        stack* right_elt;
-        stack* left_elt;
+        stack *right_elt;
+        stack *left_elt;
         operation type;
         char temp[MAX_STRING + MAX_STRING / 2] = {0};
         if (isalpha(postfix_str[i]) && isalpha(postfix_str[i + 1]))
@@ -205,18 +199,100 @@ int main(void)
             temp[0] = '\0';
         }
     }
-    printf("%s\n", (pop())->val);
-    free(head);
-    /*
+}
+
+void print_stack()
+{
     int count = 1;
-    while(NULL != head)
+    while (NULL != head)
     {
-        stack* elt = pop();
+        stack *elt = pop();
         printf(" %3d: %s %d |", count, elt->val, elt->operation_type);
-        if (0 == count % 10) printf("\n");
+        if (0 == count % 10)
+            printf("\n");
         free(elt);
         count++;
     }
-    */
+}
+
+void print_menu()
+{
+    printf("Insert digit:\n");
+    printf("      0 - exit;\n");
+    printf("      1 - insert postfix string;\n");
+    printf("      2 - print seved postfix string;\n");
+    printf("      3 - print seved infixfix string;\n");
+    printf("      4 - make a calculation;\n");
+    printf("Your answer >: ");
+}
+
+int get_answer()
+{
+    int answer;
+    do {
+        if (scanf("%d", &answer) == 0)
+        {
+            printf("Your answer is not digit, correct from 0 to 4, try again.\n");
+            while (getchar() != '\n')
+                continue;
+            print_menu();
+        }
+        else if (answer < 0 || answer > 4)
+        {
+            printf("Your answer (%d) is incorrect, correct from 0 to 4, try again.\n", answer);
+            print_menu();
+        }
+    }
+    while (answer < 0 || answer > 4);
+    while (getchar() != '\n')
+        continue;
+    return answer;
+}
+
+void calc(char* postfix_str)
+{
+    
+}
+
+int main(void)
+{
+    char postfix_str[MAX_STRING] = {0};
+    int answer;
+    printf("!!!!!!!!Program for translation from postfix to infix!!!!!!!!!\n");
+    printf("--------------------------------------------------------------\n");
+    print_menu();
+    answer = get_answer();
+    while (answer != 0)
+    {
+        switch (answer)
+        {
+        case 1:
+            head = NULL;
+            get_postfix_string(postfix_str);
+            push_infix_in_head(postfix_str);
+            printf("--------------------------------------------------------------\n");
+            printf("Infix string: \"%s\"\n", head->val);
+            printf("--------------------------------------------------------------\n");
+            break;
+        case 2:
+            printf("--------------------------------------------------------------\n");
+            printf("Postfix string: \"%s\"\n", postfix_str);
+            printf("--------------------------------------------------------------\n");
+            break;
+        case 3:
+            printf("--------------------------------------------------------------\n");
+            printf("Infix string: \"%s\"\n", head->val);
+            printf("--------------------------------------------------------------\n");
+            break;
+        case 4:
+            calc(postfix_str);
+            break;
+        }
+        printf("Done!\n");
+        print_menu();
+        answer = get_answer();
+    }
+    
+    free(head);
     return 0;
 }
