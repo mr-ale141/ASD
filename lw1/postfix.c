@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 #define MAX_STRING 100                       // postfix string max 100 symbol
 
@@ -32,6 +33,31 @@ typedef struct st
     struct st* next;
 } stack;
 stack* head;
+
+typedef struct st_calc
+{
+    float val;
+    struct st_calc *next;
+} stack_calc;
+stack_calc *head_calc;
+
+void push_calc(float val)
+{
+    stack_calc* elt;
+    elt = malloc(sizeof(stack_calc));
+    elt->val = val;
+    elt->next = head_calc;
+    head_calc = elt;
+}
+
+stack_calc* pop_calc()
+{
+    stack_calc* elt;
+    if (NULL == head_calc) return NULL;
+    elt = head_calc;
+    head_calc = elt->next;
+    return elt;
+}
 
 void push(char* str, operation type)
 {
@@ -217,7 +243,7 @@ void print_stack()
 
 void print_menu()
 {
-    printf("Insert digit:\n");
+    printf("Select a menu item:\n");
     printf("      0 - exit;\n");
     printf("      1 - insert postfix string;\n");
     printf("      2 - print seved postfix string;\n");
@@ -249,9 +275,104 @@ int get_answer()
     return answer;
 }
 
+float get_val(char ch)
+{
+    float val;
+    printf("Insert val of '%c': ", ch);
+    while (scanf("%f", &val) == 0)
+    {
+        while (getchar() != '\n')
+            continue;
+        printf("Your answer is incorrect, try again.\n");
+        printf("Insert val of '%c': ", ch);
+    }
+    return val;
+}
+
 void calc(char* postfix_str)
 {
-    
+    free(head_calc);
+    head_calc = NULL;
+    stack_calc *right_elt;
+    stack_calc *left_elt;
+    char str[MAX_STRING] = {0};
+    for (int i = 0; i < strlen(postfix_str); i++)
+    {
+        if (isalpha(postfix_str[i]) && ' ' == postfix_str[i + 1])
+        {
+            push_calc(get_val(postfix_str[i]));
+            i++;
+        }
+        else if (isdigit(postfix_str[i]))
+        {
+            get_str_befor_space(postfix_str, &i, str);
+            push_calc(strtof(str, NULL));
+            str[0] = '\0';
+        }
+        else if (isalpha(postfix_str[i]) && isalpha(postfix_str[i + 1]))
+        {
+            right_elt = pop_calc();
+            get_str_befor_space(postfix_str, &i, str);
+            if (strstr(str, "sin"))
+            {
+                push_calc((float) sin((float) right_elt->val));
+            }
+            else if (strstr(str, "cos"))
+            {
+                push_calc((float) cos((float) right_elt->val));
+            }
+            else if (strstr(str, "exp"))
+            {
+                push_calc((float) exp((float) right_elt->val));
+            }
+            else if (strstr(str, "ln") || strstr(str, "log"))
+            {
+                push_calc((float) logf((float) right_elt->val));
+            }
+            free(right_elt);
+        }
+        else if ('+' == postfix_str[i])
+        {
+            right_elt = pop_calc();
+            left_elt = pop_calc();
+            push_calc(left_elt->val + right_elt->val);
+            free(right_elt);
+            free(left_elt);
+        }
+        else if ('-' == postfix_str[i])
+        {
+            right_elt = pop_calc();
+            left_elt = pop_calc();
+            push_calc(left_elt->val - right_elt->val);
+            free(right_elt);
+            free(left_elt);
+        }
+        else if ('*' == postfix_str[i])
+        {
+            right_elt = pop_calc();
+            left_elt = pop_calc();
+            push_calc(left_elt->val * right_elt->val);
+            free(right_elt);
+            free(left_elt);
+        }
+        else if ('/' == postfix_str[i])
+        {
+            right_elt = pop_calc();
+            left_elt = pop_calc();
+            push_calc(left_elt->val / right_elt->val);
+            free(right_elt);
+            free(left_elt);
+        }
+        else if ('^' == postfix_str[i])
+        {
+            right_elt = pop_calc();
+            left_elt = pop_calc();
+            push_calc(powf(left_elt->val, right_elt->val));
+            free(right_elt);
+            free(left_elt);
+        }
+    }
+    printf("Answer = %.2f\n", (pop_calc())->val);
 }
 
 int main(void)
@@ -267,6 +388,7 @@ int main(void)
         switch (answer)
         {
         case 1:
+            free(head);
             head = NULL;
             get_postfix_string(postfix_str);
             push_infix_in_head(postfix_str);
