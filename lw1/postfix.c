@@ -180,7 +180,7 @@ void push_infix_in_head(char *postfix_str)
             type = umnozhenie;
             right_elt = pop();
             left_elt = pop();
-            if (is_var == left_elt->operation_type || NULL == strchr(left_elt->val, '/') && type <= left_elt->operation_type)
+            if (is_var == left_elt->operation_type || type <= left_elt->operation_type)
                 sprintf(temp, "%s %c ", left_elt->val, postfix_str[i]);
             else
                 sprintf(temp, "(%s) %c ", left_elt->val, postfix_str[i]);
@@ -290,11 +290,22 @@ void calc(char* postfix_str)
     stack_calc *right_elt;
     stack_calc *left_elt;
     char str[MAX_STRING] = {0};
+    char var_name[MAX_STRING] = {0};
+    float var_val[MAX_STRING] = {0};
+    int var_index = 0;
     for (int i = 0; i < strlen(postfix_str); i++)
     {
         if (isalpha(postfix_str[i]) && ' ' == postfix_str[i + 1])
         {
-            push_calc(get_val(postfix_str[i]));
+            if (strchr(var_name, postfix_str[i]))
+                push_calc(var_val[strchr(var_name, postfix_str[i]) - var_name]);
+            else
+            {
+                var_name[var_index] = postfix_str[i];
+                var_val[var_index] = get_val(postfix_str[i]);
+                push_calc(var_val[var_index]);
+                var_index++;
+            }
             i++;
         }
         else if (isdigit(postfix_str[i]))
@@ -313,15 +324,15 @@ void calc(char* postfix_str)
             }
             else if (strstr(str, "cos"))
             {
-                push_calc((float) cos((float) right_elt->val));
+                push_calc((float)cos((float)right_elt->val));
             }
             else if (strstr(str, "exp"))
             {
-                push_calc((float) exp((float) right_elt->val));
+                push_calc((float)exp((float)right_elt->val));
             }
             else if (strstr(str, "ln") || strstr(str, "log"))
             {
-                push_calc((float) logf((float) right_elt->val));
+                push_calc((float)logf((float)right_elt->val));
             }
             free(right_elt);
         }
