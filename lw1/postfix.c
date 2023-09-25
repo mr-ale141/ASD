@@ -465,15 +465,10 @@ int main(void)
                 (*strchr(p_str, '\n')) = '\0';
                 push_infix_in_head(p_str);
                 count++;
-                sprintf(temp_str, "%d:\n\tPostfix: ", count);
-                strcat(temp_str, p_str);
-                strcat(temp_str, "\n");
+                sprintf(temp_str, "%d:\n\tPostfix: %s\n", count, p_str);
                 fputs(temp_str, file_out);
                 temp_str[0] = '\0';
-
-                strcat(temp_str, "\tInfix  : ");
-                strcat(temp_str, head->val);
-                strcat(temp_str, "\n");
+                sprintf(temp_str, "\tInfix  : %s\n", head->val);
                 fputs(temp_str, file_out);
                 temp_str[0] = '\0';
             }
