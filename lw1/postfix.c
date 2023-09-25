@@ -466,11 +466,13 @@ int main(void)
                 push_infix_in_head(p_str);
                 count++;
                 itoa(count, temp_str, 10);
-                strcat(temp_str, ": ");
+                strcat(temp_str, ":\n\tPostfix: ");
                 strcat(temp_str, p_str);
-                while (strlen(temp_str) < (MAX_STRING / 2))
-                    strcat(temp_str, " ");
-                strcat(temp_str, "| ");
+                strcat(temp_str, "\n");
+                fputs(temp_str, file_out);
+                temp_str[0] = '\0';
+
+                strcat(temp_str, "\tInfix  : ");
                 strcat(temp_str, head->val);
                 strcat(temp_str, "\n");
                 fputs(temp_str, file_out);
@@ -485,7 +487,7 @@ int main(void)
             else
             {
                 printf("--------------------------------------------------------------\n");
-                printf("Recorded %d lines.\n", count);
+                printf("Recorded %d elements.\n", count);
                 printf("--------------------------------------------------------------\n");
             }
                 fclose(file_in);
@@ -496,7 +498,6 @@ int main(void)
         print_menu();
         answer = get_answer();
     }
-    
     free(head);
     return 0;
 }
