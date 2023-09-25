@@ -85,6 +85,38 @@ void get_postfix_string(char* str)
     (*strchr(str, '\n')) = '\0';
 }
 
+FILE* get_file_input()
+{
+    char str[MAX_STRING] = {0};
+    FILE *file;
+    printf("Insert file name for INPUT with address (max %d symbol):\n->: ", MAX_STRING);
+    fgets(str, 100, stdin);
+    (*strchr(str, '\n')) = '\0';
+    while (NULL == (file = fopen(str, "r")))
+    {
+        printf("Incorrect file name \"%s\" for INPUT, try again:\n->: ", str);
+        fgets(str, 100, stdin);
+        (*strchr(str, '\n')) = '\0';
+    }
+    return file;
+}
+
+FILE* get_file_output()
+{
+    char str[MAX_STRING] = {0};
+    FILE* file;
+    printf("Insert file name for OUTPUT with address (max %d symbol):\n->: ", MAX_STRING);
+    fgets(str, 100, stdin);
+    (*strchr(str, '\n')) = '\0';
+    while (NULL == (file = fopen(str, "w")))
+    {
+        printf("Incorrect file name for OUTPUT, try again:\n->: ");
+        fgets(str, 100, stdin);
+        (*strchr(str, '\n')) = '\0';
+    }
+    return file;
+}
+
 void get_str_befor_space(char *in_str, int *i, char *temp)
 {
     int pos_temp = 0;
@@ -244,6 +276,7 @@ void print_menu()
     printf("      2 - print seved postfix string;\n");
     printf("      3 - print seved infixfix string;\n");
     printf("      4 - make a calculation;\n");
+    printf("      5 - Open file and write in file;\n");
     printf("Your answer >: ");
 }
 
@@ -258,12 +291,12 @@ int get_answer()
                 continue;
             print_menu();
         }
-        else if (answer < 0 || answer > 4)
+        else if (answer < 0 || answer > 5)
         {
             printf("Your answer (%d) is incorrect, correct from 0 to 4, try again.\n", answer);
             print_menu();
         }
-    } while (answer < 0 || answer > 4);
+    } while (answer < 0 || answer > 5);
     while (getchar() != '\n')
         continue;
     return answer;
@@ -420,6 +453,35 @@ int main(void)
                 printf("Postfix string is empty!!!\n");
                 printf("--------------------------------------------------------------\n");
             }
+            break;
+        case 5:
+            FILE* file_in = get_file_input();
+            FILE* file_out = get_file_output();
+            int count = 0;
+            char p_str[MAX_STRING] = {0};
+            char temp_str[MAX_STRING] = {0};
+            while (fgets(p_str, 100, file_in))
+            {
+                (*strchr(p_str, '\n')) = '\0';
+                push_infix_in_head(p_str);
+                count++;
+                itoa(count, temp_str, 10);
+                strcat(temp_str, ": ");
+                strcat(temp_str, p_str);
+                while (strlen(temp_str) < (MAX_STRING / 2))
+                    strcat(temp_str, " ");
+                strcat(temp_str, "| ");
+                strcat(temp_str, head->val);
+                strcat(temp_str, "\n");
+                fputs(temp_str, file_out);
+                temp_str[0] = '\0';
+            }
+            if (0 == count)
+                printf("Input file is empty!\n");
+            else
+                printf("Recorded %d lines.\n", count);
+            fclose(file_in);
+            fclose(file_out);
             break;
         }
         printf("Done!\n");

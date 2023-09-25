@@ -1,0 +1,11 @@
+a b - c +
+a b + c d * -
+a b c * + d -
+a b c * + 2 /
+a b c + * d + 2 /
+a b c ^ ^
+a cos sin
+a b ln * exp
+a sin b ^
+a b / c /
+a b c / /
