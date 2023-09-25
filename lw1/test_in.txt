@@ -9,3 +9,5 @@ a b ln * exp
 a sin b ^
 a b / c /
 a b c / /
+a b c + * d + 2 4 ^ /
+a b c + * d + 2 b c + ^ /

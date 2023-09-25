@@ -274,9 +274,9 @@ void print_menu()
     printf("      0 - exit;\n");
     printf("      1 - insert postfix string;\n");
     printf("      2 - print seved postfix string;\n");
-    printf("      3 - print seved infixfix string;\n");
+    printf("      3 - print seved infix string;\n");
     printf("      4 - make a calculation;\n");
-    printf("      5 - Open file and write in file;\n");
+    printf("      5 - open file and write in file;\n");
     printf("Your answer >: ");
 }
 
@@ -477,12 +477,20 @@ int main(void)
                 temp_str[0] = '\0';
             }
             if (0 == count)
+            {
+                printf("--------------------------------------------------------------\n");
                 printf("Input file is empty!\n");
+                printf("--------------------------------------------------------------\n");
+            }
             else
+            {
+                printf("--------------------------------------------------------------\n");
                 printf("Recorded %d lines.\n", count);
-            fclose(file_in);
-            fclose(file_out);
-            break;
+                printf("--------------------------------------------------------------\n");
+            }
+                fclose(file_in);
+                fclose(file_out);
+                break;
         }
         printf("Done!\n");
         print_menu();
