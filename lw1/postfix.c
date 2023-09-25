@@ -465,8 +465,7 @@ int main(void)
                 (*strchr(p_str, '\n')) = '\0';
                 push_infix_in_head(p_str);
                 count++;
-                itoa(count, temp_str, 10);
-                strcat(temp_str, ":\n\tPostfix: ");
+                sprintf(temp_str, "%d:\n\tPostfix: ", count);
                 strcat(temp_str, p_str);
                 strcat(temp_str, "\n");
                 fputs(temp_str, file_out);
