@@ -5,6 +5,10 @@
     строчной латинской буквой. Запросить значения переменных и
     вычислить выражение. Представить его в инфиксной форме со
     скобками. Лишние скобки присутствовать не должны (11).
+
+    ->: a b * c ^
+--------------------------------------------------------------
+Infix string: "a * b ^ c"
 */
 
 #include <stdio.h>
@@ -216,7 +220,7 @@ void push_infix_in_head(char *postfix_str)
                 sprintf(temp, "%s %c ", left_elt->val, postfix_str[i]);
             else
                 sprintf(temp, "(%s) %c ", left_elt->val, postfix_str[i]);
-            if (is_var == right_elt->operation_type || NULL == strchr(right_elt->val, '/') && type <= right_elt->operation_type)
+            if (is_var == right_elt->operation_type && (NULL == strchr(right_elt->val, '*') || postfix_str[i] == '/') && NULL == strchr(right_elt->val, '/') || postfix_str[i] == '*' && type <= right_elt->operation_type)
                 strcat(temp, right_elt->val);
             else
             {
@@ -234,7 +238,7 @@ void push_infix_in_head(char *postfix_str)
             type = stepen;
             right_elt = pop();
             left_elt = pop();
-            if (is_var == left_elt->operation_type || type == left_elt->operation_type)
+            if (is_var == left_elt->operation_type || type > left_elt->operation_type)
                 sprintf(temp, "%s %c ", left_elt->val, postfix_str[i]);
             else
                 sprintf(temp, "(%s) %c ", left_elt->val, postfix_str[i]);
@@ -459,7 +463,7 @@ int main(void)
             FILE* file_out = get_file_output();
             int count = 0;
             char p_str[MAX_STRING] = {0};
-            char temp_str[MAX_STRING] = {0};
+            char temp_str[MAX_STRING + MAX_STRING / 2] = {0};
             while (fgets(p_str, 100, file_in))
             {
                 (*strchr(p_str, '\n')) = '\0';
