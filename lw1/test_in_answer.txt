@@ -1,0 +1,66 @@
+
+a b - c +
+    a - b + c
+
+a b + c d * -
+    a + b - c * d
+
+a b c * + d -
+    a + b * c - d
+
+a b c * + 2 /
+    (a + b * c) / 2
+
+a b c + * d + 2 /
+    (a * (b + c) + d) / 2
+
+a b c ^ ^
+    a ^ b ^ c
+
+a cos sin
+    sin cos a
+
+a b ln * exp
+    exp (a * ln b)
+
+a sin b ^
+    sin a ^ b
+
+a b / c /
+    a / b / c
+
+a b c / /
+    a / (b / c)
+
+a b c + * d + 2 4 ^ /
+    (a * (b + c) + d) / 2 ^ 4
+
+a b c + * d + 2 b c + ^ /
+    (a * (b + c) + d) / 2 ^ (b + c)
+
+a b ^ c ^
+    (a ^ b) ^ c
+
+a b + c *
+    (a + b) * c
+
+a b * c ^
+    (a * b) ^ c
+
+a b - c /
+    (a - b) / c
+
+a b c - -
+    a - (b - c)
+
+a b c + -
+    a - (b + c)
+
+a b c - +
+    a + b - c
+
+a b c / *
+    a * b / c
+
+a b c * /
+    a / (b * c)

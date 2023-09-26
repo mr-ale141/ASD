@@ -21,8 +21,8 @@ Infix string: "a * b ^ c"
 
 typedef enum
 {
+    func = 4,
     stepen = 3,
-    func = 3,
     delenie = 2,
     umnozhenie = 2,
     minus = 1,
@@ -150,7 +150,7 @@ void push_infix_in_head(char *postfix_str)
             type = func;
             get_str_befor_space(postfix_str, &i, temp);
             right_elt = pop();
-            if (is_var == right_elt->operation_type || (type == right_elt->operation_type && NULL == strchr(right_elt->val, '^')))
+            if (is_var == right_elt->operation_type || right_elt->operation_type == type || right_elt->operation_type == stepen)
             {
                 strcat(temp, " ");
                 strcat(temp, right_elt->val);
@@ -211,16 +211,38 @@ void push_infix_in_head(char *postfix_str)
             free(right_elt);
             temp[0] = '\0';
         }
-        else if ('*' == postfix_str[i] || '/' == postfix_str[i])
+        else if ('*' == postfix_str[i])
         {
             type = umnozhenie;
             right_elt = pop();
             left_elt = pop();
-            if (is_var == left_elt->operation_type || type <= left_elt->operation_type)
+            if (is_var == left_elt->operation_type || left_elt->operation_type >= type)
                 sprintf(temp, "%s %c ", left_elt->val, postfix_str[i]);
             else
                 sprintf(temp, "(%s) %c ", left_elt->val, postfix_str[i]);
-            if (is_var == right_elt->operation_type && (NULL == strchr(right_elt->val, '*') || postfix_str[i] == '/') && NULL == strchr(right_elt->val, '/') || postfix_str[i] == '*' && type <= right_elt->operation_type)
+            if (is_var == right_elt->operation_type || right_elt->operation_type >= type)
+                strcat(temp, right_elt->val);
+            else
+            {
+                strcat(temp, "(");
+                strcat(temp, right_elt->val);
+                strcat(temp, ")");
+            }
+            push(temp, type);
+            free(left_elt);
+            free(right_elt);
+            temp[0] = '\0';
+        }
+        else if ('/' == postfix_str[i])
+        {
+            type = delenie;
+            right_elt = pop();
+            left_elt = pop();
+            if (is_var == left_elt->operation_type || left_elt->operation_type >= type)
+                sprintf(temp, "%s %c ", left_elt->val, postfix_str[i]);
+            else
+                sprintf(temp, "(%s) %c ", left_elt->val, postfix_str[i]);
+            if (is_var == right_elt->operation_type || right_elt->operation_type > type)
                 strcat(temp, right_elt->val);
             else
             {
@@ -238,11 +260,11 @@ void push_infix_in_head(char *postfix_str)
             type = stepen;
             right_elt = pop();
             left_elt = pop();
-            if (is_var == left_elt->operation_type || type > left_elt->operation_type)
+            if (is_var == left_elt->operation_type || left_elt->operation_type > type)
                 sprintf(temp, "%s %c ", left_elt->val, postfix_str[i]);
             else
                 sprintf(temp, "(%s) %c ", left_elt->val, postfix_str[i]);
-            if (is_var == right_elt->operation_type || type == right_elt->operation_type)
+            if (is_var == right_elt->operation_type || right_elt->operation_type >= type)
                 strcat(temp, right_elt->val);
             else
             {
