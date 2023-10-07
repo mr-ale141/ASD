@@ -312,14 +312,18 @@ int get_answer()
     do {
         if (scanf("%d", &answer) == 0)
         {
-            printf("Your answer is not digit, correct from 0 to 4, try again.\n");
+            printf("--------------------------------------------------------------\n");
+            printf("Your answer is not digit, correct from 0 to 5, try again.\n");
+            printf("--------------------------------------------------------------\n");
             while (getchar() != '\n')
                 continue;
             print_menu();
         }
         else if (answer < 0 || answer > 5)
         {
-            printf("Your answer (%d) is incorrect, correct from 0 to 4, try again.\n", answer);
+            printf("--------------------------------------------------------------\n");
+            printf("Your answer (%d) is incorrect, correct from 0 to 5, try again.\n", answer);
+            printf("--------------------------------------------------------------\n");
             print_menu();
         }
     } while (answer < 0 || answer > 5);
@@ -336,7 +340,9 @@ float get_val(char ch)
     {
         while (getchar() != '\n')
             continue;
+        printf("--------------------------------------------------------------\n");
         printf("Your answer is incorrect, try again.\n");
+        printf("--------------------------------------------------------------\n");
         printf("Insert val of '%c': ", ch);
     }
     return val;
