@@ -32,47 +32,172 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
-typedef struct nd
-{
-    int num;
-    bool isLeaf;
-    //!
+typedef struct n {
+    int linkCount;
+    int isVisited;
+    int minDist;
 } node;
 
-void printlinkList(FILE* file_out, int nodesCount, int linkList[nodesCount][nodesCount])
+typedef struct q
 {
-    fprintf(file_out, "link     ");
+    int numPC;
+    struct q* next;
+} queue;
+queue* firstQ = NULL;
+queue* lastQ = NULL;
+
+void addQ(int numPC)
+{
+    queue* elt;
+    elt = malloc(sizeof(queue));
+    elt->numPC = numPC;
+    if (firstQ == NULL)
+    {
+        firstQ = elt;
+        lastQ = elt;
+    }
+    else
+    {
+        lastQ->next = elt;
+        elt->next = NULL;
+        lastQ = elt;
+    }
+}
+
+queue* getQ()
+{
+    queue* elt = NULL;
+    if (firstQ == NULL) return NULL;
+    elt = firstQ;
+    firstQ = elt->next;
+    return elt;
+}
+
+void printLinks(FILE* file_out, int nodesCount, int links[nodesCount][nodesCount])
+{
+    fprintf(file_out, "Link     ");
     for (int i = 0; i < nodesCount; ++i)
-        {
-            fprintf(file_out, "%6d   ", i + 1);
-        }
+        fprintf(file_out, "%6d   ", i + 1);
     fprintf(file_out, "\n-------+-");
     for (int i = 0; i < nodesCount; ++i)
-        {
-            fprintf(file_out, "-------+-", i + 1);
-        }
+        fprintf(file_out, "-------+-", i + 1);
     fprintf(file_out, "\n");
     for (int i = 0; i < nodesCount; ++i)
     {
         fprintf(file_out, "%-6d | ", i + 1);
         for (int j = 0; j < nodesCount; ++j)
         {
-            fprintf(file_out, "%6d | ", linkList[i][j]);
+            if (links[i][j])
+                fprintf(file_out, "%6d | ", links[i][j]);
+            else
+                fprintf(file_out, "%06d | ", links[i][j]);
         }
         fprintf(file_out, "\n");
     }
     fprintf(file_out, "-------+-");
     for (int i = 0; i < nodesCount; ++i)
-        {
-            fprintf(file_out, "-------+-", i + 1);
-        }
+        fprintf(file_out, "-------+-", i + 1);
     fprintf(file_out, "\n");
+}
+
+void printNodes(FILE* file_out, int nodesCount, node* nodes[nodesCount])
+{
+    fprintf(file_out, "Node     Links    Visited  minDist\n");
+    fprintf(file_out, "-------+--------+--------+--------+-\n");
+    for (int i = 0; i < nodesCount; ++i)
+    {
+        fprintf(file_out, "%-6d | %-6d | %-6d | %-6d | \n", i + 1, nodes[i]->linkCount, nodes[i]->isVisited, nodes[i]->minDist);
+    }
+    fprintf(file_out, "-------+--------+--------+--------+-\n");
+}
+
+void printQ(FILE* file_out)
+{
+    queue* elt;
+    elt = firstQ;
+    int count = 1;
+    if (elt != NULL)
+    {
+        fprintf(file_out, "Queue#   Num PC\n", count, elt->numPC);
+        fprintf(file_out, "-------+--------+-\n");
+        while (elt != NULL)
+        {
+            fprintf(file_out, "%-6d | %6d |\n", count, elt->numPC);
+            elt = elt->next;
+            count++;
+        }
+        fprintf(file_out, "-------+--------+-\n");
+    }
+    else
+        fprintf(file_out, "Queue is empty!\n");
+}
+
+void printAnswer(FILE* file_out, int answer[2])
+{
+    fprintf(file_out, "Answer:\n");
+    if (answer[1] == 0)
+        fprintf(file_out, "1\n%d\n", answer[0]);
+    else
+    {
+        int min = (answer[0] < answer[1]) ? answer[0] : answer[1];
+        int max = (min == answer[0]) ? answer[1] : answer[0];
+        fprintf(file_out, "2\n%d %d\n", min, max);
+    }
+}
+
+void initNodes(int nodesCount, node* nodes[nodesCount])
+{
+    for (int i = 0; i < nodesCount; ++i)
+    {
+        node* elt;
+        elt = malloc(sizeof(node));
+        elt->isVisited = 0;
+        elt->linkCount = 0;
+        elt->minDist = nodesCount + 1;
+        nodes[i] = elt;
+    }
+}
+
+void initLinks(int nodesCount, int links[nodesCount][nodesCount])
+{
+    for (int i = 0; i < nodesCount; ++i)
+    {
+        for (int j = 0; j < nodesCount; ++j)
+        {
+            links[i][j] = 0;        // минимальное не возможное значение пути
+        }
+    }
+}
+
+void updateLinksNodes(FILE* file_in, int nodesCount, int links[nodesCount][nodesCount], node* nodes[nodesCount])
+{
+    int n1, n2;
+    while (fscanf(file_in, "%d %d", &n1, &n2) != EOF)
+    {
+        fgetc(file_in);
+        links[n1 - 1][n2 - 1] = 1;
+        links[n2 - 1][n1 - 1] = 1;
+        nodes[n1 - 1]->linkCount++;
+        nodes[n2 - 1]->linkCount++;
+    }
+}
+
+void addLeavesInQueue(int nodesCount, node* nodes[nodesCount])
+{
+    for (int i = 0; i < nodesCount; ++i)
+    {
+        if (nodes[i]->linkCount == 1) 
+        {
+            nodes[i]->minDist = 0;
+            addQ(i + 1);
+        }
+    }
 }
 
 int main(int argc, char* argv[])
 {
+    const int not = 0;
     if (argc < 3) 
     {
         printf("For start ->: name_program.exe fale_in.txt file_out.txt\n");
@@ -85,25 +210,53 @@ int main(int argc, char* argv[])
     int nodesCount;
     fscanf(file_in, "%d", &nodesCount);
     fgetc(file_in);
-    int linkList[nodesCount][nodesCount];
-    for (int i = 0; i < nodesCount; ++i)
+    node* nodes[nodesCount];
+    initNodes(nodesCount, nodes);
+    int links[nodesCount][nodesCount];
+    initLinks(nodesCount, links);
+    updateLinksNodes(file_in, nodesCount, links, nodes);
+    addLeavesInQueue(nodesCount, nodes);
+    int answer[2] ={0, 0};
+    // printLinks(file_out, nodesCount, links);
+    // printNodes(file_out, nodesCount, nodes);
+    queue* q;
+    while (q = getQ())
     {
-        for (int j = 0; j < nodesCount; ++j)
+        if (nodes[q->numPC - 1]->isVisited == not)
         {
-            linkList[i][j] = nodesCount + 1;        // минимальное не возможное значение пути
+            nodes[q->numPC - 1]->isVisited++;
+            for (int i = 0; i < nodesCount; ++i)
+            {
+                if (links[q->numPC - 1][i] == 1)
+                {
+                    if (nodes[i]->isVisited == not && nodes[i]->minDist == nodesCount + 1)
+                        nodes[i]->minDist = nodes[q->numPC - 1]->minDist + 1;
+                    else if (nodes[i]->minDist < nodes[q->numPC - 1]->minDist + 1 && nodes[i]->linkCount != 1)
+                        nodes[i]->minDist = nodes[q->numPC - 1]->minDist + 1;
+                    else if (nodes[i]->minDist == nodes[q->numPC - 1]->minDist)
+                    {
+                        answer[0] = i + 1;
+                        answer[1] = q->numPC;
+                    }
+                    else if (nodes[i]->minDist + 1 == nodes[q->numPC - 1]->minDist || nodes[i]->minDist == nodes[q->numPC - 1]->minDist + 1)
+                    {
+                        answer[0] = i + 1;
+                        answer[1] = 0;
+                    }
+                    links[i][q->numPC - 1]--;
+                    links[q->numPC - 1][i]--;
+                    if (nodes[q->numPC - 1]->linkCount == 1)
+                        nodes[q->numPC - 1]->linkCount--;
+                    nodes[i]->linkCount--;
+                    if (nodes[i]->linkCount == 1)
+                            addQ(i + 1);
+                }
+            }
         }
+        free(q);
     }
-    int n1, n2;
-    while (fscanf(file_in, "%d %d", &n1, &n2) != EOF)
-    {
-        fgetc(file_in);
-        linkList[n1 - 1][n2 - 1] = 0;
-        linkList[n2 - 1][n1 - 1] = 0;
-    }
-    printlinkList(file_out, nodesCount, linkList);
-
-
-
+    // printNodes(file_out, nodesCount, nodes);
+    printAnswer(file_out, answer);
     fclose(file_in);
     fclose(file_out);
     return 0;
