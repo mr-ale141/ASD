@@ -154,7 +154,7 @@ void initNodes(int nodesCount, node* nodes[nodesCount])
         elt = malloc(sizeof(node));
         elt->isVisited = 0;
         elt->linkCount = 0;
-        elt->minDist = nodesCount + 1;
+        elt->minDist = nodesCount + 1;        // не возможное значение пути
         nodes[i] = elt;
     }
 }
@@ -165,7 +165,7 @@ void initLinks(int nodesCount, int links[nodesCount][nodesCount])
     {
         for (int j = 0; j < nodesCount; ++j)
         {
-            links[i][j] = 0;        // минимальное не возможное значение пути
+            links[i][j] = 0;
         }
     }
 }
@@ -219,6 +219,7 @@ int main(int argc, char* argv[])
     int answer[2] ={0, 0};
     // printLinks(file_out, nodesCount, links);
     // printNodes(file_out, nodesCount, nodes);
+    // printQ(file_out);
     queue* q;
     while (q = getQ())
     {
