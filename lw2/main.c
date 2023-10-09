@@ -81,7 +81,7 @@ void printLinks(FILE* file_out, int nodesCount, int links[nodesCount][nodesCount
         fprintf(file_out, "%6d   ", i + 1);
     fprintf(file_out, "\n-------+-");
     for (int i = 0; i < nodesCount; ++i)
-        fprintf(file_out, "-------+-", i + 1);
+        fprintf(file_out, "-------+-");
     fprintf(file_out, "\n");
     for (int i = 0; i < nodesCount; ++i)
     {
@@ -97,7 +97,7 @@ void printLinks(FILE* file_out, int nodesCount, int links[nodesCount][nodesCount
     }
     fprintf(file_out, "-------+-");
     for (int i = 0; i < nodesCount; ++i)
-        fprintf(file_out, "-------+-", i + 1);
+        fprintf(file_out, "-------+-");
     fprintf(file_out, "\n");
 }
 
@@ -119,7 +119,7 @@ void printQ(FILE* file_out)
     int count = 1;
     if (elt != NULL)
     {
-        fprintf(file_out, "Queue#   Num PC\n", count, elt->numPC);
+        fprintf(file_out, "Queue#   Num PC\n");
         fprintf(file_out, "-------+--------+-\n");
         while (elt != NULL)
         {
