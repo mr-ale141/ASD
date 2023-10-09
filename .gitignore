@@ -10,3 +10,4 @@ $ cat .gitignore
 *.exe
 .vscode
 bin
+lw2/out.txt
