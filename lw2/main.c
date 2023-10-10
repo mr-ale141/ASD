@@ -32,6 +32,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+
 
 typedef struct n {
     int linkCount;
@@ -197,6 +199,7 @@ void addLeavesInQueue(int nodesCount, node* nodes[nodesCount])
 
 int main(int argc, char* argv[])
 {
+    const time_t timerStart = time(NULL);
     const int not = 0;
     if (argc < 3) 
     {
@@ -260,5 +263,7 @@ int main(int argc, char* argv[])
     printAnswer(file_out, answer);
     fclose(file_in);
     fclose(file_out);
+    const time_t timerStop = time(NULL);
+    printf("%lf\n", difftime(timerStop, timerStart));
     return 0;
 }
