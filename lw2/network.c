@@ -225,16 +225,19 @@ int main(int argc, char* argv[])
         int currPC = q->numPC;
         if (network[currPC - 1]->listLinks == NULL) break;
         int linkPC = network[currPC - 1]->listLinks->numPC;
-        if (network[linkPC - 1]->minDist == INT_MAX)
+        int distLinkPC = network[linkPC - 1]->minDist;
+        int distCurrPC = network[currPC - 1]->minDist;
+        int linksCountLinkPC = network[linkPC - 1]->linkCount;
+        if (distLinkPC == INT_MAX)
             network[linkPC - 1]->minDist = network[currPC - 1]->minDist + 1;
-        else if (network[linkPC - 1]->minDist < network[currPC - 1]->minDist + 1 && network[linkPC - 1]->linkCount != 1)
+        else if (distLinkPC < distCurrPC + 1 && linksCountLinkPC != 1)
             network[linkPC - 1]->minDist = network[currPC - 1]->minDist + 1;
-        else if (network[linkPC - 1]->minDist == network[currPC - 1]->minDist)
+        else if (distLinkPC == distCurrPC)
         {
             answer[0] = linkPC;
             answer[1] = currPC;
         }
-        else if (network[linkPC - 1]->minDist + 1 == network[currPC - 1]->minDist || network[linkPC - 1]->minDist == network[currPC - 1]->minDist + 1)
+        else if (distLinkPC + 1 == distCurrPC || distLinkPC == distCurrPC + 1)
         {
             answer[0] = linkPC;
             answer[1] = 0;
@@ -251,6 +254,6 @@ int main(int argc, char* argv[])
     fclose(file_out);
     double timerStop = (double) clock();
     double timeDiff = timerStop / CLOCKS_PER_SEC - timerStart / CLOCKS_PER_SEC;
-    printf("%lf\n", timeDiff);
+    printf("%.3lf c\n", timeDiff);
     return 0;
 }
