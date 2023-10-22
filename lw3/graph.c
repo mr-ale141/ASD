@@ -26,24 +26,26 @@
 #include <locale.h>
 
 #define MAX_STRING 200
+#define MAX_OPERATIONS 100
+#define NO_NEXT -1
 
 typedef enum machineEnum
 {
-    lathe,                      // токарные работы
-    fraser,                     // фрезерные работы
-    drilling,                   // сверлильный станок
-    welding,                    // сварочные работы
-    laser,                      // лазерная резка
-    listBending,                // станок для гибки листов металла
-    wireBending,                // станок для гибки проволоки
-    grinding,                   // шлифовальные работы
-    painting,                   // покраска
-    plastic,                    // литье пластика
-    sewing,                     // швейные работы
-    soldering,                  // пайка
-    programming,                // программирование
-    manual,                     // ручная сборка
-    testing                     // тестирование и отладка
+    lathe,                      // 0 токарные работы
+    fraser,                     // 1 фрезерные работы
+    drilling,                   // 2 сверлильный станок
+    welding,                    // 3 сварочные работы
+    laser,                      // 4 лазерная резка
+    listBending,                // 5 станок для гибки листов металла
+    wireBending,                // 6 станок для гибки проволоки
+    grinding,                   // 7 шлифовальные работы
+    painting,                   // 8 покраска
+    plastic,                    // 9 литье пластика
+    sewing,                     // 10 швейные работы
+    soldering,                  // 11 пайка
+    programming,                // 12 программирование
+    manual,                     // 13 ручная сборка
+    testing                     // 14 тестирование и отладка
 } machine;
 
 typedef enum statusEnum
@@ -54,24 +56,87 @@ typedef enum statusEnum
 } status;
 
 typedef struct operationStruct {
-    wchar_t* result;
-    float minuteLimit;
+    char result[MAX_STRING];
+    int minuteLimit;
     machine operationType;
     status operationStatus;
-    unsigned next;
+    int next;
 } operation;
+
+typedef struct st
+{
+    int num;
+    int countPoint;
+    struct st* next;
+} stack;
+stack* headStack;
+
+typedef struct q
+{
+    int numPC;
+    struct q* next;
+} queue;
+queue* firstQ = NULL;
+queue* lastQ = NULL;
+
+void addQ(int numPC)
+{
+    queue* elt;
+    elt = malloc(sizeof(queue));
+    elt->numPC = numPC;
+    if (firstQ == NULL)
+    {
+        firstQ = elt;
+        lastQ = elt;
+    }
+    else
+    {
+        lastQ->next = elt;
+        elt->next = NULL;
+        lastQ = elt;
+    }
+}
+
+queue* getQ()
+{
+    queue* elt = NULL;
+    if (firstQ == NULL) return NULL;
+    elt = firstQ;
+    firstQ = elt->next;
+    return elt;
+}
+
+void pushFather(int num, int countPoint)
+{
+    stack* elt;
+    elt = malloc(sizeof(stack));
+    elt->num = num;
+    elt->countPoint = countPoint;
+    elt->next = headStack;
+    headStack = elt;
+}
+
+stack* popFather()
+{
+    stack* elt;
+    if (NULL == headStack) return NULL;
+    elt = headStack;
+    headStack = elt->next;
+    return elt;
+}
 
 void print_menu()
 {
     printf("Select a menu item:\n");
     printf("      0 - exit;\n");
     printf("      1 - open file and write in file;\n");
+    printf("      2 - print operations;\n");
     printf("Your answer >: ");
 }
 
 int get_answer()
 {
-    const int MAX_ANSWER = 1;
+    const int MAX_ANSWER = 2;
     int answer;
     do {
         if (scanf("%d", &answer) == 0)
@@ -128,50 +193,172 @@ FILE* get_file_output()
     return file;
 }
 
+int getCountPoint(char* in_str)
+{
+    int count = 0;
+    for (int i = 0; in_str[i] != '\0'; i++)
+    {
+        if (in_str[i] == '.')
+            count++;
+        else
+            break;
+    }
+    return count;
+}
+
+machine getTypeOperation(char* in_str)
+{
+    char* ptr;
+    if (ptr = strstr(in_str, "токар"))
+        return lathe;
+    else if (ptr = strstr(in_str, "фрезер"))
+        return fraser;
+    else if (ptr = strstr(in_str, "сверл"))
+        return drilling;
+    else if (ptr = strstr(in_str, "свар"))
+        return welding;
+    else if (ptr = strstr(in_str, "лазер"))
+        return laser;
+    else if (ptr = strstr(in_str, "гибка листов"))
+        return listBending;
+    else if (ptr = strstr(in_str, "гибка проволоки"))
+        return wireBending;
+    else if (ptr = strstr(in_str, "шлиф"))
+        return grinding;
+    else if (ptr = strstr(in_str, "краск"))
+        return painting;
+    else if (ptr = strstr(in_str, "лить"))
+        return plastic;
+    else if (ptr = strstr(in_str, "швей"))
+        return sewing;
+    else if (ptr = strstr(in_str, "пайк"))
+        return soldering;
+    else if (ptr = strstr(in_str, "программ"))
+        return programming;
+    else if (ptr = strstr(in_str, "ручная сборка"))
+        return manual;
+    else if (ptr = strstr(in_str, "тест"))
+        return testing;
+}
+
+int getMinuteLimit(char* in_str)
+{
+    char* start = strstr(in_str, " | ") + 3;
+    char* end = strchr(in_str, '\0');
+    return (int) strtol(start, &end, 10);
+}
+
+void readOperationsFile(operation* operations, int* countOperations)
+{
+    FILE* file_in = get_file_input();
+    int countString = 0;
+    int prevCountPoint = 0;
+    char in_str[MAX_STRING] = {0};
+    while (fgets(in_str, MAX_STRING, file_in))
+    {
+        (*strchr(in_str, '\n')) = '\0';
+        if (in_str[0] == '\0' || in_str[0] == '#')
+        {
+            in_str[0] = '\0';
+            continue;
+        }
+        (*countOperations)++;
+        int countPoint = getCountPoint(in_str);
+        strncpy(
+                operations[(*countOperations) - 1].result,
+                in_str + countPoint,
+                strstr(in_str, " - ") - in_str - countPoint
+            );
+        operations[(*countOperations) - 1].operationType = getTypeOperation(in_str);
+        operations[(*countOperations) - 1].minuteLimit = getMinuteLimit(in_str);
+        operations[(*countOperations) - 1].operationStatus = new;
+        if (countPoint == 0)
+        {
+            operations[(*countOperations) - 1].next = NO_NEXT;
+            pushFather((*countOperations) - 1, countPoint);
+        }
+        else if (countPoint > prevCountPoint)
+        {
+            operations[(*countOperations) - 1].next = headStack->num;
+            pushFather((*countOperations) - 1, countPoint);
+        }
+        else if (countPoint == prevCountPoint)
+        {
+            operations[(*countOperations) - 2].operationStatus = inProgress;
+            operations[(*countOperations) - 1].next = headStack->next->num;
+            free(popFather());
+            pushFather((*countOperations) - 1, countPoint);
+        }
+        else if (countPoint < prevCountPoint)
+        {
+            operations[(*countOperations) - 2].operationStatus = inProgress;
+            while (headStack->countPoint != countPoint)
+                free(popFather());
+            operations[(*countOperations) - 1].next = headStack->next->num;
+            free(popFather());
+            pushFather((*countOperations) - 1, countPoint);
+        }
+        in_str[0] = '\0';
+        prevCountPoint = countPoint;
+    }
+    operations[(*countOperations) - 1].operationStatus = inProgress;
+    if (0 == (*countOperations))
+    {
+        printf("--------------------------------------------------------------\n");
+        printf("Input file is empty!\n");
+        printf("--------------------------------------------------------------\n");
+    }
+    else
+    {
+        printf("--------------------------------------------------------------\n");
+        printf("Readed %d operations.\n", (*countOperations));
+        printf("--------------------------------------------------------------\n");
+    }
+    fclose(file_in);
+}
+
+void printOperations(operation* operations, int countOperations)
+{
+    if (countOperations)
+        for (int i = 0; i < countOperations; i++)
+        {
+            printf("%2d | Type = %2d | Status = %2d | Limit = %2d min | Next = %2d | %s\n",
+                i,
+                operations[i].operationType,
+                operations[i].operationStatus,
+                operations[i].minuteLimit,
+                operations[i].next,
+                operations[i].result
+            );
+        }
+    else
+    {
+        printf("--------------------------------------------------------------\n");
+        printf("Operations empty. Needed read file!\n");
+        printf("--------------------------------------------------------------\n");
+    }
+}
+
 int main()
 {
     setlocale(LC_ALL, "");
     print_menu();
+    operation operations[MAX_OPERATIONS];
+    int countOperations = 0;
     int answer = get_answer();
     while(answer != 0)
     {
-        FILE* file_in = get_file_input();
-        FILE* file_out = get_file_output();
-        int count = 0;
-        wchar_t in_str[MAX_STRING] = {0};
-        wchar_t out_str[MAX_STRING] = {0};
-        wchar_t* success = fgetws(in_str, MAX_STRING, file_in);
-        while (success)
+        switch (answer)
         {
-            (*wcschr(in_str, L'\n')) = L'\0';
-            if (in_str[0] == L'\0' || in_str[0] == L'#')
-            {
-                in_str[0] = L'\0';
-                success = fgetws(in_str, MAX_STRING, file_in);
-                continue;
-            }
-            count++;
-            swprintf(out_str, MAX_STRING, L"%d: \"%ls\"\n", count, in_str);
-            printf("%ls", out_str);
-            fputws(out_str, file_out);
-            out_str[0] = L'\0';
-            in_str[0] = L'\0';
-            success = fgetws(in_str, MAX_STRING, file_in);
+        case 1:
+            readOperationsFile(operations, &countOperations);
+            break;
+        case 2:
+            printOperations(operations, countOperations);
+            break;
+        default:
+            break;
         }
-        if (0 == count)
-        {
-            printf("--------------------------------------------------------------\n");
-            printf("Input file is empty!\n");
-            printf("--------------------------------------------------------------\n");
-        }
-        else
-        {
-            printf("--------------------------------------------------------------\n");
-            printf("Recorded %d elements.\n", count);
-            printf("--------------------------------------------------------------\n");
-        }
-        fclose(file_in);
-        fclose(file_out);
         print_menu();
         answer = get_answer();
     }
