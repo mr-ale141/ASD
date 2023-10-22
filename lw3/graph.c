@@ -22,8 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <wchar.h>
-#include <locale.h>
 
 #define MAX_STRING 200
 #define MAX_OPERATIONS 100
@@ -129,14 +127,17 @@ void print_menu()
 {
     printf("Select a menu item:\n");
     printf("      0 - exit;\n");
-    printf("      1 - open file and write in file;\n");
-    printf("      2 - print operations;\n");
+    printf("      1 - open graph from file;\n");
+    printf("      2 - print list operations;\n");
+    printf("      3 - print all time for create product;\n");
+    printf("      4 - print general timetable;\n");
+    printf("      5 - print timetable for machine;\n");
     printf("Your answer >: ");
 }
 
 int get_answer()
 {
-    const int MAX_ANSWER = 2;
+    const int MAX_ANSWER = 5;
     int answer;
     do {
         if (scanf("%d", &answer) == 0)
@@ -319,29 +320,22 @@ void readOperationsFile(operation* operations, int* countOperations)
 
 void printOperations(operation* operations, int countOperations)
 {
-    if (countOperations)
-        for (int i = 0; i < countOperations; i++)
-        {
-            printf("%2d | Type = %2d | Status = %2d | Limit = %2d min | Next = %2d | %s\n",
-                i,
-                operations[i].operationType,
-                operations[i].operationStatus,
-                operations[i].minuteLimit,
-                operations[i].next,
-                operations[i].result
-            );
-        }
-    else
+    for (int i = 0; i < countOperations; i++)
     {
-        printf("--------------------------------------------------------------\n");
-        printf("Operations empty. Needed read file!\n");
-        printf("--------------------------------------------------------------\n");
+        printf("%2d | Type = %2d | Status = %2d | Limit = %2d min | Next = %2d | %s\n",
+            i,
+            operations[i].operationType,
+            operations[i].operationStatus,
+            operations[i].minuteLimit,
+            operations[i].next,
+            operations[i].result
+        );
     }
 }
 
 int main()
 {
-    setlocale(LC_ALL, "");
+    printf("Program for creating production timetable\n");
     print_menu();
     operation operations[MAX_OPERATIONS];
     int countOperations = 0;
@@ -354,7 +348,44 @@ int main()
             readOperationsFile(operations, &countOperations);
             break;
         case 2:
-            printOperations(operations, countOperations);
+            if (countOperations)
+                printOperations(operations, countOperations);
+            else
+            {
+                printf("--------------------------------------------------------------\n");
+                printf("Operations empty. Needed read file!\n");
+                printf("--------------------------------------------------------------\n");
+            }
+            break;
+        case 3:
+            if (countOperations)
+                ;
+            else
+            {
+                printf("--------------------------------------------------------------\n");
+                printf("Operations empty. Needed read file!\n");
+                printf("--------------------------------------------------------------\n");
+            }
+            break;
+        case 4:
+            if (countOperations)
+                ;
+            else
+            {
+                printf("--------------------------------------------------------------\n");
+                printf("Operations empty. Needed read file!\n");
+                printf("--------------------------------------------------------------\n");
+            }
+            break;
+        case 5:
+            if (countOperations)
+                ;
+            else
+            {
+                printf("--------------------------------------------------------------\n");
+                printf("Operations empty. Needed read file!\n");
+                printf("--------------------------------------------------------------\n");
+            }
             break;
         default:
             break;
