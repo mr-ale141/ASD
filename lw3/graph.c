@@ -130,7 +130,7 @@ FILE* get_file_output()
 
 int main()
 {
-    // setlocale(LC_ALL, "");
+    setlocale(LC_ALL, "");
     print_menu();
     int answer = get_answer();
     while(answer != 0)
@@ -151,8 +151,8 @@ int main()
                 continue;
             }
             count++;
-            swprintf_s(out_str, MAX_STRING, L"%d: \"%s\"\n", count, in_str);
-            wprintf_s(L"%s", out_str);
+            swprintf(out_str, MAX_STRING, L"%d: \"%ls\"\n", count, in_str);
+            printf("%ls", out_str);
             fputws(out_str, file_out);
             out_str[0] = L'\0';
             in_str[0] = L'\0';
