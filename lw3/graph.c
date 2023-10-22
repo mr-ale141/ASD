@@ -23,8 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wchar.h>
+#include <locale.h>
 
-#define MAX_STRING 200
+#define MAX_STRING 100
 
 typedef enum machineEnum
 {
@@ -62,10 +63,10 @@ typedef struct operationStruct {
 
 void print_menu()
 {
-    wprintf(L"Select a menu item:\n");
-    wprintf(L"      0 - exit;\n");
-    wprintf(L"      1 - open file and write in file;\n");
-    wprintf(L"Your answer >: ");
+    printf("Select a menu item:\n");
+    printf("      0 - exit;\n");
+    printf("      1 - open file and write in file;\n");
+    printf("Your answer >: ");
 }
 
 int get_answer()
@@ -73,62 +74,63 @@ int get_answer()
     const int MAX_ANSWER = 1;
     int answer;
     do {
-        if (wscanf(L"%d", &answer) == 0)
+        if (scanf("%d", &answer) == 0)
         {
-            wprintf(L"--------------------------------------------------------------\n");
-            wprintf(L"Your answer is not digit, correct from 0 to %d, try again.\n", MAX_ANSWER);
-            wprintf(L"--------------------------------------------------------------\n");
-            while (getwchar() != L'\n')
+            printf("--------------------------------------------------------------\n");
+            printf("Your answer is not digit, correct from 0 to %d, try again.\n", MAX_ANSWER);
+            printf("--------------------------------------------------------------\n");
+            while (getchar() != '\n')
                 continue;
             print_menu();
         }
         else if (answer < 0 || answer > MAX_ANSWER)
         {
-            wprintf(L"--------------------------------------------------------------\n");
-            wprintf(L"Your answer (%d) is incorrect, correct from 0 to %d, try again.\n", answer, MAX_ANSWER);
-            wprintf(L"--------------------------------------------------------------\n");
+            printf("--------------------------------------------------------------\n");
+            printf("Your answer (%d) is incorrect, correct from 0 to %d, try again.\n", answer, MAX_ANSWER);
+            printf("--------------------------------------------------------------\n");
             print_menu();
         }
     } while (answer < 0 || answer > MAX_ANSWER);
-    while (getwchar() != L'\n')
+    while (getchar() != '\n')
         continue;
     return answer;
 }
 
 FILE* get_file_input()
 {
-    wchar_t str[MAX_STRING] = {0};
+    char str[MAX_STRING] = {0};
     FILE *file;
-    wprintf(L"Insert file name for INPUT with address (max %d symbol):\n->: ", MAX_STRING);
-    fgetws(str, MAX_STRING, stdin);
-    (*wcschr(str, L'\n')) = L'\0';
-    while (NULL == (file = _wfopen(str, L"r")))
+    printf("Insert file name for INPUT with address (max %d symbol):\n->: ", MAX_STRING);
+    fgets(str, MAX_STRING, stdin);
+    (*strchr(str, '\n')) = '\0';
+    while (NULL == (file = fopen(str, "r")))
     {
-        wprintf(L"Incorrect file name \"%s\" for INPUT, try again:\n->: ", str);
-        fgetws(str, MAX_STRING, stdin);
-        (*wcschr(str, L'\n')) = '\0';
+        printf("Incorrect file name \"%s\" for INPUT, try again:\n->: ", str);
+        fgets(str, MAX_STRING, stdin);
+        (*strchr(str, '\n')) = '\0';
     }
     return file;
 }
 
 FILE* get_file_output()
 {
-    wchar_t str[MAX_STRING] = {0};
+    char str[MAX_STRING] = {0};
     FILE* file;
-    wprintf(L"Insert file name for OUTPUT with address (max %d symbol):\n->: ", MAX_STRING);
-    fgetws(str, MAX_STRING, stdin);
-    (*wcschr(str, L'\n')) = L'\0';
-    while (NULL == (file = _wfopen(str, L"w")))
+    printf("Insert file name for OUTPUT with address (max %d symbol):\n->: ", MAX_STRING);
+    fgets(str, MAX_STRING, stdin);
+    (*strchr(str, '\n')) = '\0';
+    while (NULL == (file = fopen(str, "w")))
     {
         printf("Incorrect file name for OUTPUT, try again:\n->: ");
-        fgetws(str, MAX_STRING, stdin);
-        (*wcschr(str, L'\n')) = L'\0';
+        fgets(str, MAX_STRING, stdin);
+        (*strchr(str, '\n')) = '\0';
     }
     return file;
 }
 
 int main()
 {
+    setlocale(LC_ALL, "");
     print_menu();
     int answer = get_answer();
     while(answer != 0)
@@ -138,32 +140,40 @@ int main()
         int count = 0;
         wchar_t in_str[MAX_STRING] = {0};
         wchar_t out_str[MAX_STRING] = {0};
-        while (fgetws(in_str, MAX_STRING, file_in))
+        wchar_t* success = fgetws(in_str, MAX_STRING, file_in);
+        while (success)
         {
             (*wcschr(in_str, L'\n')) = L'\0';
-            if (in_str[0] == L'\0' || in_str[0] == L'#') continue;
+            if (in_str[0] == L'\0' || in_str[0] == L'#')
+            {
+                in_str[0] = L'\0';
+                success = fgetws(in_str, MAX_STRING, file_in);
+                continue;
+            }
             count++;
-            _swprintf(out_str, L"%d: \"%s\"\n", count, in_str);
+            swprintf(out_str, MAX_STRING, L"%d: \"%s\"\n", count, in_str);
             wprintf(L"%s\n", out_str);
             fputws(out_str, file_out);
             out_str[0] = L'\0';
             in_str[0] = L'\0';
+            success = fgetws(in_str, MAX_STRING, file_in);
         }
         if (0 == count)
         {
-            wprintf(L"--------------------------------------------------------------\n");
-            wprintf(L"Input file is empty!\n");
-            wprintf(L"--------------------------------------------------------------\n");
+            printf("--------------------------------------------------------------\n");
+            printf("Input file is empty!\n");
+            printf("--------------------------------------------------------------\n");
         }
         else
         {
-            wprintf(L"--------------------------------------------------------------\n");
-            wprintf(L"Recorded %d elements.\n", count);
-            wprintf(L"--------------------------------------------------------------\n");
+            printf("--------------------------------------------------------------\n");
+            printf("Recorded %d elements.\n", count);
+            printf("--------------------------------------------------------------\n");
         }
         fclose(file_in);
         fclose(file_out);
         print_menu();
         answer = get_answer();
     }
+    return 0;
 }
