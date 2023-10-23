@@ -528,6 +528,7 @@ void printMachineTimetable(timetableType* company, operation* operations, int co
     timetableType* currMachine = &company[machine];
     printf("---------------------------%9s--------------------------\n", getNameMashine(machine));
     printf("Start | Finish | Operation\n");
+    printf("------+--------+----------------------------------------------\n");
     while (currMachine != NULL)
     {
         char operation[MAX_STRING];
