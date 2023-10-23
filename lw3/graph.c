@@ -26,6 +26,9 @@
 #define MAX_STRING 200
 #define MAX_OPERATIONS 100
 #define NO_NEXT -1
+#define NO_FINISH -2
+#define COUNT_MACHINES 15
+#define MIN_STEP 0
 
 typedef enum machineEnum
 {
@@ -44,11 +47,12 @@ typedef enum machineEnum
     programming,                // 12 программирование
     manual,                     // 13 ручная сборка
     testing                     // 14 тестирование и отладка
-} machine;
+} machineType;
 
 typedef enum statusEnum
 {
     new,
+    waiting,
     inProgress,
     completed,
 } status;
@@ -56,10 +60,19 @@ typedef enum statusEnum
 typedef struct operationStruct {
     char result[MAX_STRING];
     int minuteLimit;
-    machine operationType;
+    int stepToFinish;
+    int dependencies;
+    machineType operationType;
     status operationStatus;
     int next;
 } operation;
+
+typedef struct timetableStruct {
+    int timeStart;
+    int timeFinish;
+    int operation;
+    struct timetableStruct* next;
+} timetableType;
 
 typedef struct st
 {
@@ -68,41 +81,6 @@ typedef struct st
     struct st* next;
 } stack;
 stack* headStack;
-
-typedef struct q
-{
-    int numPC;
-    struct q* next;
-} queue;
-queue* firstQ = NULL;
-queue* lastQ = NULL;
-
-void addQ(int numPC)
-{
-    queue* elt;
-    elt = malloc(sizeof(queue));
-    elt->numPC = numPC;
-    if (firstQ == NULL)
-    {
-        firstQ = elt;
-        lastQ = elt;
-    }
-    else
-    {
-        lastQ->next = elt;
-        elt->next = NULL;
-        lastQ = elt;
-    }
-}
-
-queue* getQ()
-{
-    queue* elt = NULL;
-    if (firstQ == NULL) return NULL;
-    elt = firstQ;
-    firstQ = elt->next;
-    return elt;
-}
 
 void pushFather(int num, int countPoint)
 {
@@ -135,31 +113,37 @@ void print_menu()
     printf("Your answer >: ");
 }
 
-int get_answer()
+int get_answer(int maxAnswer)
 {
-    const int MAX_ANSWER = 5;
     int answer;
     do {
         if (scanf("%d", &answer) == 0)
         {
             printf("--------------------------------------------------------------\n");
-            printf("Your answer is not digit, correct from 0 to %d, try again.\n", MAX_ANSWER);
+            printf("Your answer is not digit, correct from 0 to %d, try again.\n", maxAnswer);
             printf("--------------------------------------------------------------\n");
             while (getchar() != '\n')
                 continue;
             print_menu();
         }
-        else if (answer < 0 || answer > MAX_ANSWER)
+        else if (answer < 0 || answer > maxAnswer)
         {
             printf("--------------------------------------------------------------\n");
-            printf("Your answer (%d) is incorrect, correct from 0 to %d, try again.\n", answer, MAX_ANSWER);
+            printf("Your answer (%d) is incorrect, correct from 0 to %d, try again.\n", answer, maxAnswer);
             printf("--------------------------------------------------------------\n");
             print_menu();
         }
-    } while (answer < 0 || answer > MAX_ANSWER);
+    } while (answer < 0 || answer > maxAnswer);
     while (getchar() != '\n')
         continue;
     return answer;
+}
+
+void printErrorEmpty()
+{
+    printf("--------------------------------------------------------------\n");
+    printf("Operations empty. Needed read file!\n");
+    printf("--------------------------------------------------------------\n");
 }
 
 FILE* get_file_input()
@@ -207,7 +191,7 @@ int getCountPoint(char* in_str)
     return count;
 }
 
-machine getTypeOperation(char* in_str)
+machineType getTypeOperation(char* in_str)
 {
     char* ptr;
     if (ptr = strstr(in_str, "токар"))
@@ -230,9 +214,9 @@ machine getTypeOperation(char* in_str)
         return painting;
     else if (ptr = strstr(in_str, "лить"))
         return plastic;
-    else if (ptr = strstr(in_str, "швей"))
+    else if (ptr = strstr(in_str, "шитье"))
         return sewing;
-    else if (ptr = strstr(in_str, "пайк"))
+    else if (ptr = strstr(in_str, "паяльные работы"))
         return soldering;
     else if (ptr = strstr(in_str, "программ"))
         return programming;
@@ -264,45 +248,54 @@ void readOperationsFile(operation* operations, int* countOperations)
             continue;
         }
         (*countOperations)++;
+        operation* currOperation = &operations[(*countOperations) - 1];
+        operation* prevOperation = &operations[(*countOperations) - 2];
         int countPoint = getCountPoint(in_str);
         strncpy(
-                operations[(*countOperations) - 1].result,
+                currOperation->result,
                 in_str + countPoint,
                 strstr(in_str, " - ") - in_str - countPoint
             );
-        operations[(*countOperations) - 1].operationType = getTypeOperation(in_str);
-        operations[(*countOperations) - 1].minuteLimit = getMinuteLimit(in_str);
-        operations[(*countOperations) - 1].operationStatus = new;
+        currOperation->operationType = getTypeOperation(in_str);
+        currOperation->minuteLimit = getMinuteLimit(in_str);
+        currOperation->operationStatus = new;
+        currOperation->dependencies = 0;
         if (countPoint == 0)
         {
-            operations[(*countOperations) - 1].next = NO_NEXT;
+            currOperation->next = NO_NEXT;
             pushFather((*countOperations) - 1, countPoint);
+            currOperation->stepToFinish = 1;
         }
         else if (countPoint > prevCountPoint)
         {
-            operations[(*countOperations) - 1].next = headStack->num;
+            currOperation->next = headStack->num;
+            operations[headStack->num].dependencies++;
             pushFather((*countOperations) - 1, countPoint);
         }
         else if (countPoint == prevCountPoint)
         {
-            operations[(*countOperations) - 2].operationStatus = inProgress;
-            operations[(*countOperations) - 1].next = headStack->next->num;
+            prevOperation->operationStatus = waiting;
+            currOperation->next = headStack->next->num;
+            operations[headStack->next->num].dependencies++;
             free(popFather());
             pushFather((*countOperations) - 1, countPoint);
         }
         else if (countPoint < prevCountPoint)
         {
-            operations[(*countOperations) - 2].operationStatus = inProgress;
+            prevOperation->operationStatus = waiting;
             while (headStack->countPoint != countPoint)
                 free(popFather());
-            operations[(*countOperations) - 1].next = headStack->next->num;
+            currOperation->next = headStack->next->num;
+            operations[headStack->next->num].dependencies++;
             free(popFather());
             pushFather((*countOperations) - 1, countPoint);
         }
+        currOperation->stepToFinish = operations[currOperation->next].stepToFinish + 1;
         in_str[0] = '\0';
         prevCountPoint = countPoint;
     }
-    operations[(*countOperations) - 1].operationStatus = inProgress;
+    operation* lastOperation = &operations[(*countOperations) - 1];
+    lastOperation->operationStatus = waiting;
     if (0 == (*countOperations))
     {
         printf("--------------------------------------------------------------\n");
@@ -318,80 +311,335 @@ void readOperationsFile(operation* operations, int* countOperations)
     fclose(file_in);
 }
 
-void printOperations(operation* operations, int countOperations)
+void printOperations(operation* operations, const int countOperations)
 {
     for (int i = 0; i < countOperations; i++)
     {
-        printf("%2d | Type = %2d | Status = %2d | Limit = %2d min | Next = %2d | %s\n",
+        printf("%2d | Type = %2d | Status = %2d | Limit = %2d min | Next = %2d | Steps = %2d | Dep = %2d | %s\n",
             i,
             operations[i].operationType,
             operations[i].operationStatus,
             operations[i].minuteLimit,
             operations[i].next,
+            operations[i].stepToFinish,
+            operations[i].dependencies,
             operations[i].result
         );
     }
 }
 
+int getOperationIndex(const machineType machine, operation* operations, const int countOperations)
+{
+    int operationIndex = NO_NEXT;
+    int stepToFinish = MIN_STEP;
+    for (int i = 0; i < countOperations; i++)
+    {
+        if (operations[i].operationType == machine && operations[i].operationStatus == waiting && operations[i].stepToFinish > stepToFinish)
+        {
+            stepToFinish = operations[i].stepToFinish;
+            operationIndex = i;
+        }
+    }
+    return operationIndex;
+}
+
+void startCompany(timetableType* company, operation* operations, const int countOperations, int* time)
+{
+    *time = 0;
+    for (int machine = lathe; machine <= testing; machine++)
+    {
+        int operationIndex = getOperationIndex(machine, operations, countOperations);
+        company[machine].timeStart = *time;
+        company[machine].timeFinish = NO_FINISH;
+        company[machine].next = NULL;
+        company[machine].operation = operationIndex;
+        if (operationIndex >= 0)
+        {
+            operations[operationIndex].operationStatus = inProgress;
+            company[machine].timeFinish = *time + operations[operationIndex].minuteLimit;
+        }
+    }
+}
+
+int isProductFinish(operation* operations, const int countOperations)
+{
+    int isFinish = 1;
+    for (int i = 0; i < countOperations; i++)
+        if (operations[i].operationStatus != completed)
+            isFinish = 0;
+    return isFinish;
+}
+
+void createProduct(timetableType* company, operation* operations, const int countOperations, int* time)
+{
+    startCompany(company, operations, countOperations, time);
+    while (!isProductFinish(operations, countOperations))
+    {
+        (*time)++;
+        for (int machine = lathe; machine <= testing; machine++)
+        {
+            timetableType* currElt = &company[machine];
+            while (currElt->next != NULL)
+                currElt = currElt->next;
+            if (currElt->timeFinish == *time)
+            {
+                operations[currElt->operation].operationStatus = completed;
+                int next = operations[currElt->operation].next;
+                if (next != NO_NEXT)
+                    operations[next].dependencies--;
+                if (next != NO_NEXT && operations[next].dependencies == 0)
+                    operations[next].operationStatus = waiting;
+                timetableType* newElt = malloc(sizeof(timetableType));
+                newElt->next = NULL;
+                int newOperation = getOperationIndex(machine, operations, countOperations);
+                newElt->operation = newOperation;
+                newElt->timeStart = *time;
+                if (newOperation != NO_NEXT)
+                {
+                    operations[newOperation].operationStatus = inProgress;
+                    newElt->timeFinish = operations[newOperation].minuteLimit + *time;
+                }
+                else
+                    newElt->timeFinish = NO_FINISH;
+                currElt->next = newElt;
+            }
+            else if (currElt->operation == NO_NEXT)
+            {
+                currElt->timeFinish = *time;
+                int newOperation = getOperationIndex(machine, operations, countOperations);
+                if (newOperation != NO_NEXT)
+                {
+                    timetableType* newElt = malloc(sizeof(timetableType));
+                    newElt->next = NULL;
+                    newElt->operation = newOperation;
+                    newElt->timeStart = *time;
+                    operations[newOperation].operationStatus = inProgress;
+                    newElt->timeFinish = operations[newOperation].minuteLimit + *time;
+                    currElt->next = newElt;
+                }
+            }
+            
+        }
+    }
+}
+
+char* getNameMashine(machineType machine)
+{
+    if (machine == lathe)
+        return "Lathe";
+    else if (machine == fraser)
+        return "Fraser";
+    else if (machine == drilling)
+        return "Drilling";
+    else if (machine == welding)
+        return "Welding";
+    else if (machine == laser)
+        return "Laser";
+    else if (machine == listBending)
+        return "ListBend";
+    else if (machine == wireBending)
+        return "WireBend";
+    else if (machine == grinding)
+        return "Grinding";
+    else if (machine == painting)
+        return "Painting";
+    else if (machine == plastic)
+        return "Plastic";
+    else if (machine == sewing)
+        return "Sewing";
+    else if (machine == soldering)
+        return "Soldering";
+    else if (machine == programming)
+        return "Program";
+    else if (machine == manual)
+        return "Manual";
+    else if (machine == testing)
+        return "Testing";
+}
+
+int getMaxResultStrLen(operation* operations, const int countOperations)
+{
+    int maxLen = 0;
+    for (int i = 0; i < countOperations; i++)
+    {
+        int len = strlen(operations[i].result);
+        if (len > maxLen)
+            maxLen = len;
+    }
+    return maxLen;
+}
+
+machineType choiseMachine()
+{
+    printf("--------------------------------------------------------------\n");
+    printf("Select machine:\n");
+    printf("      1  - lathe;\n");
+    printf("      2  - fraser;\n");
+    printf("      3  - drilling;\n");
+    printf("      4  - welding;\n");
+    printf("      5  - laser;\n");
+    printf("      6  - listBending;\n");
+    printf("      7  - wireBending;\n");
+    printf("      8  - grinding;\n");
+    printf("      9  - painting;\n");
+    printf("      10 - plastic;\n");
+    printf("      11 - sewing;\n");
+    printf("      12 - soldering;\n");
+    printf("      13 - programming;\n");
+    printf("      14 - manual;\n");
+    printf("      15 - testing;\n");
+    printf("Your answer >: ");
+    int answer = get_answer(15);
+    if (answer == 1)
+        return lathe;
+    else if (answer == 2)
+        return fraser;
+    else if (answer == 3)
+        return drilling;
+    else if (answer == 4)
+        return welding;
+    else if (answer == 5)
+        return laser;
+    else if (answer == 6)
+        return listBending;
+    else if (answer == 7)
+        return wireBending;
+    else if (answer == 8)
+        return grinding;
+    else if (answer == 9)
+        return painting;
+    else if (answer == 10)
+        return plastic;
+    else if (answer == 11)
+        return sewing;
+    else if (answer == 12)
+        return soldering;
+    else if (answer == 13)
+        return programming;
+    else if (answer == 14)
+        return manual;
+    else if (answer == 15)
+        return testing;
+}
+
+void printMachineTimetable(timetableType* company, operation* operations, int countOperations, int timeFinish)
+{
+    machineType machine = choiseMachine();
+    timetableType* currMachine = &company[machine];
+    printf("---------------------------%9s--------------------------\n", getNameMashine(machine));
+    printf("Start | Finish | Operation\n");
+    while (currMachine != NULL)
+    {
+        char operation[MAX_STRING];
+        if (currMachine->operation != NO_NEXT)
+            printf("%5d | %6d | %s\n", currMachine->timeStart, currMachine->timeFinish, operations[currMachine->operation].result);
+        else
+            printf("%5d | %6d | %s\n", currMachine->timeStart, currMachine->timeFinish, "Ожидание");
+        currMachine = currMachine->next;
+    }
+    printf("--------------------------------------------------------------\n");
+}
+
+void printCompanyTimetable(timetableType* company, operation* operations, int countOperations, int timeFinish)
+{
+    // int maxLen = getMaxResultStrLen(operations, countOperations);
+    // printf("%*d |", maxLen, maxLen);
+    // for (machineType machine = lathe; machine < COUNT_MACHINES; machine++)
+    //     printf(" %9s |", getNameMashine(machine));
+    // printf("\n");
+    // for (int i = 0; i <= maxLen; i++)
+    //     printf("-");
+    // printf("+");
+    // for (machineType machine = lathe; machine < COUNT_MACHINES; machine++)
+    //     printf("-----------+");
+    // printf("\n");
+
+    // printf("%*s |", maxLen, "Time Start");
+    // for (machineType machine = lathe; machine < COUNT_MACHINES; machine++)
+    //     printf(" %9d |", company[machine].timeStart);
+    // printf("\n");
+
+    // printf("%*s |", maxLen, "Time Finish");
+    // for (machineType machine = lathe; machine < COUNT_MACHINES; machine++)
+    //     printf(" %9d |", company[machine].timeFinish);
+    // printf("\n");
+    int start = 0;
+    int finish = timeFinish + 1;
+    while (finish != timeFinish)
+    {
+        finish = timeFinish + 1;
+        printf("--------------------------------------------------------------\n");
+        printf("Start = %d\n", start);
+        for (machineType machine = lathe; machine < COUNT_MACHINES; machine++)
+        {
+            timetableType* currMachine = &company[machine];
+            while (currMachine->timeFinish <= start)
+                currMachine = currMachine->next;
+            if (finish > currMachine->timeFinish)
+                finish = currMachine->timeFinish;
+            int finished = 0;
+            if (currMachine->operation != NO_NEXT)
+                finished = currMachine->timeFinish;
+            printf("          %9s | Finished: %3d | %s\n", getNameMashine(machine), finished, operations[currMachine->operation].result);
+        }
+        printf("Finish = %d\n", finish);
+        printf("--------------------------------------------------------------\n");
+        start = finish;
+    }
+}
+
 int main()
 {
-    printf("Program for creating production timetable\n");
-    print_menu();
+    const int maxAnswer = 5;
+    timetableType company[COUNT_MACHINES];
     operation operations[MAX_OPERATIONS];
     int countOperations = 0;
-    int answer = get_answer();
+    int timeFinish = NO_FINISH;
+    printf("Program for creating production timetable\n");
+    print_menu();
+    int answer = get_answer(maxAnswer);
     while(answer != 0)
     {
         switch (answer)
         {
         case 1:
+            countOperations = 0;
             readOperationsFile(operations, &countOperations);
+            createProduct(company, operations, countOperations, &timeFinish);
             break;
         case 2:
             if (countOperations)
                 printOperations(operations, countOperations);
             else
-            {
-                printf("--------------------------------------------------------------\n");
-                printf("Operations empty. Needed read file!\n");
-                printf("--------------------------------------------------------------\n");
-            }
+                printErrorEmpty();
             break;
         case 3:
             if (countOperations)
-                ;
-            else
             {
                 printf("--------------------------------------------------------------\n");
-                printf("Operations empty. Needed read file!\n");
+                printf("For create product neded: %d minute\n", timeFinish);
                 printf("--------------------------------------------------------------\n");
             }
+            else
+                printErrorEmpty();
             break;
         case 4:
             if (countOperations)
-                ;
+                printCompanyTimetable(company, operations, countOperations, timeFinish);
             else
-            {
-                printf("--------------------------------------------------------------\n");
-                printf("Operations empty. Needed read file!\n");
-                printf("--------------------------------------------------------------\n");
-            }
+                printErrorEmpty();
             break;
         case 5:
             if (countOperations)
-                ;
+                printMachineTimetable(company, operations, countOperations, timeFinish);
             else
-            {
-                printf("--------------------------------------------------------------\n");
-                printf("Operations empty. Needed read file!\n");
-                printf("--------------------------------------------------------------\n");
-            }
+                printErrorEmpty();
             break;
         default:
             break;
         }
         print_menu();
-        answer = get_answer();
+        answer = get_answer(maxAnswer);
     }
     return 0;
 }
