@@ -25,7 +25,7 @@
 
 #define MAX_STRING 200
 #define MAX_OPERATIONS 100
-#define COUNT_MACHINES 15
+#define COUNT_MACHINES 16
 #define EMPTY_OPERATIONS 0
 
 typedef enum machineEnum
@@ -44,14 +44,14 @@ typedef enum machineEnum
     soldering,   // 11 пайка
     programming, // 12 программирование
     manual,      // 13 ручная сборка
-    testing      // 14 тестирование и отладка
+    testing,     // 14 тестирование и отладка
+    start        // 15 стартовая
 } machineType;
 
 typedef enum statusEnum
 {
     new,
     waiting,
-    inProgress,
     completed,
 } status;
 
@@ -74,65 +74,65 @@ typedef struct timetableStruct {
     struct timetableStruct* next;
 } timetableType;
 
-typedef struct st
-{
-    int num;
-    struct st* next;
-} stack;
-stack* headStack;
+// typedef struct st
+// {
+//     int num;
+//     struct st* next;
+// } stack;
+// stack* headStack;
 
-typedef struct q
-{
-    int num;
-    struct q* next;
-} queue;
-queue* firstQ = NULL;
-queue* lastQ = NULL;
+// typedef struct q
+// {
+//     int num;
+//     struct q* next;
+// } queue;
+// queue* firstQ = NULL;
+// queue* lastQ = NULL;
 
-void addQ(int num)
-{
-    queue* elt;
-    elt = malloc(sizeof(queue));
-    elt->num = num;
-    if (firstQ == NULL)
-    {
-        firstQ = elt;
-        lastQ = elt;
-    }
-    else
-    {
-        lastQ->next = elt;
-        elt->next = NULL;
-        lastQ = elt;
-    }
-}
+// void addQ(int num)
+// {
+//     queue* elt;
+//     elt = malloc(sizeof(queue));
+//     elt->num = num;
+//     if (firstQ == NULL)
+//     {
+//         firstQ = elt;
+//         lastQ = elt;
+//     }
+//     else
+//     {
+//         lastQ->next = elt;
+//         elt->next = NULL;
+//         lastQ = elt;
+//     }
+// }
 
-queue* getQ()
-{
-    queue* elt = NULL;
-    if (firstQ == NULL) return NULL;
-    elt = firstQ;
-    firstQ = elt->next;
-    return elt;
-}
+// queue* getQ()
+// {
+//     queue* elt = NULL;
+//     if (firstQ == NULL) return NULL;
+//     elt = firstQ;
+//     firstQ = elt->next;
+//     return elt;
+// }
 
-void push(int num)
-{
-    stack* elt;
-    elt = malloc(sizeof(stack));
-    elt->num = num;
-    elt->next = headStack;
-    headStack = elt;
-}
+// void push(int num)
+// {
+//     stack* elt;
+//     elt = malloc(sizeof(stack));
+//     elt->num = num;
+//     elt->next = headStack;
+//     headStack = elt;
+// }
 
-stack* pop()
-{
-    stack* elt;
-    if (NULL == headStack) return NULL;
-    elt = headStack;
-    headStack = elt->next;
-    return elt;
-}
+// stack* pop()
+// {
+//     stack* elt;
+//     if (NULL == headStack) return NULL;
+//     elt = headStack;
+//     headStack = elt->next;
+//     return elt;
+// }
 
 void print_menu()
 {
@@ -289,7 +289,7 @@ char* getNameMashine(machineType machine)
         return "Manual";
     else if (machine == testing)
         return "Testing";
-    else
+    else if (machine == start)
         return "Start";
 }
 
@@ -300,7 +300,7 @@ void readOperationsFile(operation* operations, int* countOperations)
     int operationStart = 0;
     operation* operation = &operations[operationStart];
     strcpy(operation->result, "0 Start");
-    operation->operationType = COUNT_MACHINES;
+    operation->operationType = start;
     operation->minuteLimit = 0;
     operation->operationStatus = waiting;
     operation->countDependencies = 0;
@@ -402,42 +402,74 @@ int isFinish(operation* operations, const int countOperations)
     return isFinish;
 }
 
-void initTimeTable(timetableType timetable[COUNT_MACHINES])
+void updateStatus(operation* operations, int operationIndex)
 {
-    for (int i = 0; i < COUNT_MACHINES; i++)
+    int countNext = operations[operationIndex].countNextOperations;
+    int* nextOperationsIndex = operations[operationIndex].nextOperations;
+    for (int i = 0; i < countNext; i++)
     {
-        timetable[i].timeStart = 0;
-        timetable[i].timeFinish = 0;
-        timetable[i].next = NULL;
-        timetable[i].operationIndex = 0;
+        operations[nextOperationsIndex[i]].countDependencies--;
+        if (operations[nextOperationsIndex[i]].countDependencies == 0)
+            operations[nextOperationsIndex[i]].operationStatus = waiting;
     }
 }
 
-void createTimeTable(timetableType timetable[COUNT_MACHINES], operation operations[MAX_OPERATIONS], const int countOperations, int* timeFinish)
+void createTimetable(timetableType** timetables, operation* operations, const int countOperations)
 {
-    initTimeTable(timetable);
     while (!isFinish(operations, countOperations))
     {
+        int maxLens[COUNT_MACHINES] = {0};
+        int nextOperation[COUNT_MACHINES];
+        for (int i = 0; i < COUNT_MACHINES; i++)
+            nextOperation[i] = countOperations + 1;
         for (int i = 0; i <= countOperations; i++)
-            if (operations[i].operationStatus == waiting)
-                push(i);
-        int leToFinish = 0;
-        stack* next;
-        while (next = pop())
         {
-            int operationIndex = next->num;
-            free(next);
-            next = NULL;
-            operation* operation = &operations[operationIndex];
-
+            int maxLenToFinish = operations[i].maxLenToFinish;
+            int machine = operations[i].operationType;
+            int status = operations[i].operationStatus;
+            if (status == waiting && maxLenToFinish > maxLens[machine])
+            {
+                maxLens[machine] = maxLenToFinish;
+                nextOperation[machine] = i;
+            }
         }
+        for (int machine = 0; machine < COUNT_MACHINES; machine++)
+        {
+            if (nextOperation[machine] != countOperations + 1)
+            {
+                int operationIndex = nextOperation[machine];
+                operation* operation = &operations[operationIndex];
+                int lastTimeFinish = 0;
+                timetableType* timetable = timetables[machine];
+                while (timetable != NULL)
+                {
+                    lastTimeFinish = timetable->timeFinish;
+                    timetable = timetable->next;
+                }
+                timetable = malloc(sizeof(timetableType));
+                timetable->operationIndex = operationIndex;
+                timetable->timeStart = lastTimeFinish;
+                timetable->timeFinish = lastTimeFinish + operation->minuteLimit;
+                operation->operationStatus = completed;
+                updateStatus(operations, operationIndex);
+            }
+        }
+    }
+}
+
+void initTimetables(timetableType** timetables)
+{
+    for (int i = 0; i < COUNT_MACHINES; i++)
+    {
+        timetables[i] = NULL;
     }
 }
 
 int main()
 {
     const int maxAnswer = 5;
-    timetableType timetable[COUNT_MACHINES];
+    timetableType* timetables[COUNT_MACHINES];
+    initTimetables(timetables);
     operation operations[MAX_OPERATIONS];
     int countOperations = EMPTY_OPERATIONS;
     int maxLenToFinish = 0;
@@ -453,7 +485,7 @@ int main()
             countOperations = EMPTY_OPERATIONS;
             readOperationsFile(operations, &countOperations);
             maxLenToFinish = getMaxLenToFinish(operations, indexStartOperation);
-            // createTimeTable(timetable, operations, countOperations, &maxLenToFinish);
+            createTimetable(timetables, operations, countOperations);
             break;
         case 2:
             if (countOperations)
