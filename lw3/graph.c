@@ -59,6 +59,7 @@ typedef struct operationStruct
 {
     char result[MAX_STRING];
     int minuteLimit;
+    int maxLenToFinish;
     int countDependencies;
     machineType operationType;
     status operationStatus;
@@ -73,13 +74,73 @@ typedef struct timetableStruct {
     struct timetableStruct* next;
 } timetableType;
 
+typedef struct st
+{
+    int num;
+    struct st* next;
+} stack;
+stack* headStack;
+
+typedef struct q
+{
+    int num;
+    struct q* next;
+} queue;
+queue* firstQ = NULL;
+queue* lastQ = NULL;
+
+void addQ(int num)
+{
+    queue* elt;
+    elt = malloc(sizeof(queue));
+    elt->num = num;
+    if (firstQ == NULL)
+    {
+        firstQ = elt;
+        lastQ = elt;
+    }
+    else
+    {
+        lastQ->next = elt;
+        elt->next = NULL;
+        lastQ = elt;
+    }
+}
+
+queue* getQ()
+{
+    queue* elt = NULL;
+    if (firstQ == NULL) return NULL;
+    elt = firstQ;
+    firstQ = elt->next;
+    return elt;
+}
+
+void push(int num)
+{
+    stack* elt;
+    elt = malloc(sizeof(stack));
+    elt->num = num;
+    elt->next = headStack;
+    headStack = elt;
+}
+
+stack* pop()
+{
+    stack* elt;
+    if (NULL == headStack) return NULL;
+    elt = headStack;
+    headStack = elt->next;
+    return elt;
+}
+
 void print_menu()
 {
     printf("Select a menu item:\n");
     printf("      0 - exit;\n");
     printf("      1 - open graph from file;\n");
     printf("      2 - print list operations;\n");
-    printf("      3 - print all time for create product;\n");
+    printf("      3 - print max len to finish;\n");
     printf("      4 - print general timetable;\n");
     printf("      5 - print timetable for machine;\n");
     printf("Your answer >: ");
@@ -244,6 +305,8 @@ void readOperationsFile(operation* operations, int* countOperations)
     operation->operationStatus = waiting;
     operation->countDependencies = 0;
     operation->countNextOperations = 0;
+    operation->maxLenToFinish = 0;
+    (*countOperations)++;
     while (fgets(in_str, MAX_STRING, file_in))
     {
         (*strchr(in_str, '\n')) = '\0';
@@ -263,6 +326,7 @@ void readOperationsFile(operation* operations, int* countOperations)
             operation->operationStatus = new;
             operation->countDependencies = 0;
             operation->countNextOperations = 0;
+            operation->maxLenToFinish = 0;
         }
         else
         {
@@ -283,7 +347,7 @@ void readOperationsFile(operation* operations, int* countOperations)
     else
     {
         printf("--------------------------------------------------------------\n");
-        printf("Readed %d operations.\n", (*countOperations));
+        printf("Readed %d operations.\n", (*countOperations) - 1);
         printf("--------------------------------------------------------------\n");
     }
     fclose(file_in);
@@ -293,13 +357,14 @@ void printOperations(operation* operations, const int countOperations)
 {
     for (int i = 0; i < countOperations; i++)
     {
-        printf("%2d | Type = %2d | Status = %2d | Limit = %2d min | Dep = %2d | Nexts = %2d | %s\n",
+        printf("%2d | Type = %2d | Status = %2d | Limit = %2d min | Dep = %2d | Nexts = %2d | MaxLen = %2d | %s\n",
             i,
             operations[i].operationType,
             operations[i].operationStatus,
             operations[i].minuteLimit,
             operations[i].countDependencies,
             operations[i].countNextOperations,
+            operations[i].maxLenToFinish,
             operations[i].result
         );
         if (operations[i].countNextOperations != 0)
@@ -314,6 +379,20 @@ void printOperations(operation* operations, const int countOperations)
     }
 }
 
+int getMaxLenToFinish(operation* operations, int numOperation)
+{
+    operations[numOperation].maxLenToFinish = operations[numOperation].minuteLimit;
+    int lenNext = 0;
+    if (operations[numOperation].countNextOperations != 0)
+        for (int i = 0; i < operations[numOperation].countNextOperations; i++)
+        {
+            int len = getMaxLenToFinish(operations, operations[numOperation].nextOperations[i]);
+            lenNext = (lenNext < len) ? len : lenNext;
+        }
+    operations[numOperation].maxLenToFinish += lenNext;
+    return operations[numOperation].maxLenToFinish;
+}
+
 int isFinish(operation* operations, const int countOperations)
 {
     int isFinish = 1;
@@ -323,21 +402,46 @@ int isFinish(operation* operations, const int countOperations)
     return isFinish;
 }
 
-void createTimeTable(timetableType timeTable[COUNT_MACHINES], operation operations[MAX_OPERATIONS], const int countOperations, int* timeFinish)
+void initTimeTable(timetableType timetable[COUNT_MACHINES])
 {
+    for (int i = 0; i < COUNT_MACHINES; i++)
+    {
+        timetable[i].timeStart = 0;
+        timetable[i].timeFinish = 0;
+        timetable[i].next = NULL;
+        timetable[i].operationIndex = 0;
+    }
+}
+
+void createTimeTable(timetableType timetable[COUNT_MACHINES], operation operations[MAX_OPERATIONS], const int countOperations, int* timeFinish)
+{
+    initTimeTable(timetable);
     while (!isFinish(operations, countOperations))
     {
-        
+        for (int i = 0; i <= countOperations; i++)
+            if (operations[i].operationStatus == waiting)
+                push(i);
+        int leToFinish = 0;
+        stack* next;
+        while (next = pop())
+        {
+            int operationIndex = next->num;
+            free(next);
+            next = NULL;
+            operation* operation = &operations[operationIndex];
+
+        }
     }
 }
 
 int main()
 {
     const int maxAnswer = 5;
-    timetableType timeTable[COUNT_MACHINES];
+    timetableType timetable[COUNT_MACHINES];
     operation operations[MAX_OPERATIONS];
     int countOperations = EMPTY_OPERATIONS;
-    int timeFinish = 0;
+    int maxLenToFinish = 0;
+    int indexStartOperation = 0;
     printf("Program for creating production timetable\n");
     print_menu();
     int answer = get_answer(maxAnswer);
@@ -348,7 +452,8 @@ int main()
         case 1:
             countOperations = EMPTY_OPERATIONS;
             readOperationsFile(operations, &countOperations);
-            createTimeTable(timeTable, operations, countOperations, &timeFinish);
+            maxLenToFinish = getMaxLenToFinish(operations, indexStartOperation);
+            // createTimeTable(timetable, operations, countOperations, &maxLenToFinish);
             break;
         case 2:
             if (countOperations)
@@ -360,7 +465,7 @@ int main()
             if (countOperations)
             {
                 printf("--------------------------------------------------------------\n");
-                printf("For create product neded: %d minute\n", timeFinish);
+                printf("Max len to finish: %d minute\n", maxLenToFinish);
                 printf("--------------------------------------------------------------\n");
             }
             else
@@ -368,13 +473,13 @@ int main()
             break;
         case 4:
             if (countOperations)
-                ;// printCompanyTimetable(company, operations, countOperations, timeFinish);
+                ;// printCompanyTimetable(company, operations, countOperations, maxLenToFinish);
             else
                 printErrorEmpty();
             break;
         case 5:
             if (countOperations)
-                ;// printMachineTimetable(company, operations, countOperations, timeFinish);
+                ;// printMachineTimetable(company, operations, countOperations, maxLenToFinish);
             else
                 printErrorEmpty();
             break;
