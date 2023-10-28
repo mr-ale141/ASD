@@ -445,9 +445,151 @@ void initTimetables(timetableType** timetables)
     }
 }
 
-void printCompanyTimetable(timetableType** timetables, operation* operations, const int countOperations)
+void printOperation(timetableType* timetable, operation* operations, int* rowStr)
 {
-    
+    if (timetable != NULL)
+    {
+        (*rowStr)++;
+        int start = timetable->timeStart;
+        int finish = timetable->timeFinish;
+        int index = timetable->operationIndex;
+        char* resultOperation = operations[index].result;
+        char* machine = getNameMashine(operations[index].operationType);
+        printf("%3d | %5d | %6d | %-10s | %s\n", *rowStr, start, finish, machine, resultOperation);
+    }
+}
+
+int isEmpty(timetableType** timetablePTRs)
+{
+    int isEmpty = 1;
+    for (int i = 0; i < COUNT_MACHINES; i++)
+        if (timetablePTRs[i] != NULL)
+            isEmpty = 0;
+    return isEmpty;
+}
+
+void printCompanyTimetable(timetableType** timetables, operation* operations, const int countOperations, int* allTime)
+{
+    int rowStr = 0;
+    timetableType* timetablePTRs[COUNT_MACHINES] = {0};
+    for (int i =0; i < COUNT_MACHINES; i++)
+        timetablePTRs[i] = timetables[i];
+    printf("                   ****| General timetable |****\n");
+    printf("----+-------+--------+------------+---------------------------------\n");
+    printf("Row | Start | Finish |    Type    | Operation\n");
+    printf("----+-------+--------+------------+---------------------------------\n");
+    while (!isEmpty(timetablePTRs))
+    {
+        int startTime = *allTime;
+        int finishTime = *allTime;
+        timetableType* timetable = NULL;
+        for (int i = 0; i < COUNT_MACHINES; i++)
+        {
+            if (timetablePTRs[i] != NULL && timetablePTRs[i]->timeStart < startTime)
+            {
+                startTime = timetablePTRs[i]->timeStart;
+                finishTime = timetablePTRs[i]->timeFinish;
+                timetable = timetablePTRs[i];
+            }
+            else if (timetablePTRs[i] != NULL && timetablePTRs[i]->timeStart == startTime && timetablePTRs[i]->timeFinish < finishTime)
+            {
+                startTime = timetablePTRs[i]->timeStart;
+                finishTime = timetablePTRs[i]->timeFinish;
+                timetable = timetablePTRs[i];
+            }
+        }
+        for (int i = 0; i < COUNT_MACHINES; i++)
+        {
+            if (timetablePTRs[i] == timetable)
+                timetablePTRs[i] = timetablePTRs[i]->next;
+        }
+        printOperation(timetable, operations, &rowStr);
+    }
+    printf("----+-------+--------+------------+---------------------------------\n");
+}
+
+int choiseMachine()
+{
+    printf("--------------------------------------------------------------\n");
+    printf("Select machine:\n");
+    printf("      1  - lathe;\n");
+    printf("      2  - fraser;\n");
+    printf("      3  - drilling;\n");
+    printf("      4  - welding;\n");
+    printf("      5  - laser;\n");
+    printf("      6  - listBending;\n");
+    printf("      7  - wireBending;\n");
+    printf("      8  - grinding;\n");
+    printf("      9  - painting;\n");
+    printf("      10 - plastic;\n");
+    printf("      11 - sewing;\n");
+    printf("      12 - soldering;\n");
+    printf("      13 - programming;\n");
+    printf("      14 - manual;\n");
+    printf("      15 - testing;\n");
+    printf("Your answer >: ");
+    int answer = get_answer(15);
+    if (answer == 1)
+        return lathe;
+    else if (answer == 2)
+        return fraser;
+    else if (answer == 3)
+        return drilling;
+    else if (answer == 4)
+        return welding;
+    else if (answer == 5)
+        return laser;
+    else if (answer == 6)
+        return listBending;
+    else if (answer == 7)
+        return wireBending;
+    else if (answer == 8)
+        return grinding;
+    else if (answer == 9)
+        return painting;
+    else if (answer == 10)
+        return plastic;
+    else if (answer == 11)
+        return sewing;
+    else if (answer == 12)
+        return soldering;
+    else if (answer == 13)
+        return programming;
+    else if (answer == 14)
+        return manual;
+    else if (answer == 15)
+        return testing;
+}
+
+void printMachineTimetable(timetableType** timetables, operation* operations, int countOperations)
+{
+    int machine = choiseMachine();
+    timetableType* timetable = timetables[machine];
+    int row = 0;
+    printf("                ****| Timetable for %s |****\n", getNameMashine(machine));
+    printf("----+-------+--------+----------------------------------------------\n");
+    printf("Row | Start | Finish | Operation\n");
+    printf("----+-------+--------+----------------------------------------------\n");
+    while (timetable != NULL)
+    {
+        row++;
+        printf("%3d | %5d | %6d | %s\n", row, timetable->timeStart, timetable->timeFinish, operations[timetable->operationIndex].result);
+        timetable = timetable->next;
+    }
+    printf("----+-------+--------+----------------------------------------------\n");
+}
+
+void freeTimetables(timetableType** timetables)
+{
+    for (int i =0; i < COUNT_MACHINES; i++)
+    {
+        while (timetables[i] != NULL)
+        {
+            timetableType* timetableNext = timetables[i]->next;
+            free(timetables[i]);
+            timetables[i] = timetableNext;
+        }
+    }
 }
 
 int main()
@@ -469,6 +611,7 @@ int main()
         {
         case 1:
             countOperations = EMPTY_OPERATIONS;
+            freeTimetables(timetables);
             readOperationsFile(operations, &countOperations);
             maxLenToFinish = getMaxLenToFinish(operations, indexStartOperation);
             createTimetable(timetables, operations, countOperations, &allTimeToFinish);
@@ -484,7 +627,6 @@ int main()
             {
                 printf("--------------------------------------------------------------\n");
                 printf("All time to finish: %d minute\n", allTimeToFinish);
-                // printf("Max len to finish: %d minute\n", maxLenToFinish);
                 printf("--------------------------------------------------------------\n");
             }
             else
@@ -492,13 +634,13 @@ int main()
             break;
         case 4:
             if (countOperations)
-                printCompanyTimetable(timetables, operations, countOperations);
+                printCompanyTimetable(timetables, operations, countOperations, &allTimeToFinish);
             else
                 printErrorEmpty();
             break;
         case 5:
             if (countOperations)
-                ;// printMachineTimetable(company, operations, countOperations, maxLenToFinish);
+                printMachineTimetable(timetables, operations, countOperations);
             else
                 printErrorEmpty();
             break;
