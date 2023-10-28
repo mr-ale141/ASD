@@ -27,6 +27,7 @@
 #define MAX_OPERATIONS 100
 #define COUNT_MACHINES 16
 #define EMPTY_OPERATIONS 0
+#define NO_OPERATION -1
 
 typedef enum machineEnum
 {
@@ -414,7 +415,7 @@ void updateStatus(operation* operations, int operationIndex)
     }
 }
 
-void createTimetable(timetableType** timetables, operation* operations, const int countOperations)
+void createTimetable(timetableType* timetables, operation* operations, const int countOperations)
 {
     while (!isFinish(operations, countOperations))
     {
@@ -440,16 +441,27 @@ void createTimetable(timetableType** timetables, operation* operations, const in
                 int operationIndex = nextOperation[machine];
                 operation* operation = &operations[operationIndex];
                 int lastTimeFinish = 0;
-                timetableType* timetable = timetables[machine];
-                while (timetable != NULL)
+                timetableType* timetable = &timetables[machine];
+                while (timetable->next != NULL)
                 {
                     lastTimeFinish = timetable->timeFinish;
                     timetable = timetable->next;
                 }
-                timetable = malloc(sizeof(timetableType));
-                timetable->operationIndex = operationIndex;
-                timetable->timeStart = lastTimeFinish;
-                timetable->timeFinish = lastTimeFinish + operation->minuteLimit;
+                if (timetable->operationIndex != NO_OPERATION)
+                {
+                    timetableType* newTimetable = malloc(sizeof(timetableType));
+                    newTimetable->operationIndex = operationIndex;
+                    newTimetable->timeStart = lastTimeFinish;
+                    newTimetable->timeFinish = lastTimeFinish + operation->minuteLimit;
+                    newTimetable->next = NULL;
+                    timetable->next = newTimetable;
+                }
+                else
+                {
+                    timetable->operationIndex = operationIndex;
+                    timetable->timeStart = lastTimeFinish;
+                    timetable->timeFinish = lastTimeFinish + operation->minuteLimit;
+                }
                 operation->operationStatus = completed;
                 updateStatus(operations, operationIndex);
             }
@@ -457,18 +469,21 @@ void createTimetable(timetableType** timetables, operation* operations, const in
     }
 }
 
-void initTimetables(timetableType** timetables)
+void initTimetables(timetableType* timetables)
 {
     for (int i = 0; i < COUNT_MACHINES; i++)
     {
-        timetables[i] = NULL;
+        timetables[i].next = NULL;
+        timetables[i].operationIndex = NO_OPERATION;
+        timetables[i].timeFinish = 0;
+        timetables[i].timeStart = 0;
     }
 }
 
 int main()
 {
     const int maxAnswer = 5;
-    timetableType* timetables[COUNT_MACHINES];
+    timetableType timetables[COUNT_MACHINES];
     initTimetables(timetables);
     operation operations[MAX_OPERATIONS];
     int countOperations = EMPTY_OPERATIONS;
