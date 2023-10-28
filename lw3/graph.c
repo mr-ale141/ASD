@@ -358,158 +358,82 @@ void initNextOperation(int* nextOperations, int countOperations)
         nextOperations[i] = countOperations + 1;
 }
 
-// void insertWaitingMaxLenOperations(operation* operations, const int countOperations, int* maxLens, int* nextOperations)
-// {
-//     for (int i = 0; i <= countOperations; i++)
-//     {
-//         int maxLenToFinish = operations[i].maxLenToFinish;
-//         int machine = operations[i].operationType;
-//         int status = operations[i].operationStatus;
-//         if (status == waiting && maxLenToFinish > maxLens[machine])
-//         {
-//             maxLens[machine] = maxLenToFinish;
-//             nextOperations[machine] = i;
-//         }
-//     }
-// }
+void updateStatus(operation* operations, const int countOperations)
+{
+    for (int i = 0; i <= countOperations; i++)
+    {
+        if (operations[i].operationStatus == inProgress)
+        {
+            int countNext = operations[i].countNextOperations;
+            int* nextOperationsIndex = operations[i].nextOperations;
+            for (int j = 0; j < countNext; j++)
+            {
+                operations[nextOperationsIndex[j]].countDependencies--;
+                if (operations[nextOperationsIndex[j]].countDependencies == 0)
+                    operations[nextOperationsIndex[j]].operationStatus = waiting;
+                if (operations[i].timetable->timeFinish > operations[nextOperationsIndex[j]].waitingFor)
+                    operations[nextOperationsIndex[j]].waitingFor = operations[i].timetable->timeFinish;
+            }
+            operations[i].operationStatus = completed;
+        }
+    }
+}
 
-// void updateStatus(operation* operations, int operationIndex)
-// {
-//     int countNext = operations[operationIndex].countNextOperations;
-//     int* nextOperationsIndex = operations[operationIndex].nextOperations;
-//     for (int i = 0; i < countNext; i++)
-//     {
-//         operations[nextOperationsIndex[i]].countDependencies--;
-//         if (operations[nextOperationsIndex[i]].countDependencies == 0)
-//             operations[nextOperationsIndex[i]].operationStatus = waiting;
-//     }
-// }
+void insertWaitingMaxLenOperations(operation* operations, const int countOperations, int* nextOperations)
+{
+    int maxLens[COUNT_MACHINES] = {0};
+    for (int i = 0; i <= countOperations; i++)
+    {
+        int maxLenToFinish = operations[i].maxLenToFinish;
+        int machine = operations[i].operationType;
+        int status = operations[i].operationStatus;
+        if (status == waiting && maxLenToFinish > maxLens[machine])
+        {
+            maxLens[machine] = maxLenToFinish;
+            nextOperations[machine] = i;
+        }
+    }
+}
 
-// void addWaitingOperationsInTimeTable(operation* operations, const int countOperations, timetableType** timetables, int* nextOperations, int* allTimeToFinish)
-// {
-//     // {
-//     //     if (nextOperations[machine] != countOperations + 1)
-//     //     {
-//     //         int operationIndex = nextOperations[machine];
-//     //         operation* operation = &operations[operationIndex];
-//     //         timetableType* timetable = &timetables[machine];
-//     //         int lastTimeFinish = timetable->timeFinish;
-//     //         while (timetable->next != NULL)
-//     //         {
-//     //             timetable = timetable->next;
-//     //             lastTimeFinish = timetable->timeFinish;
-//     //         }
-//     //         if (timetable->operationIndex != NO_OPERATION)
-//     //         {
-//     //             timetableType* newTimetable = malloc(sizeof(timetableType));
-//     //             newTimetable->operationIndex = operationIndex;
-//     //             newTimetable->timeStart = lastTimeFinish;
-//     //             newTimetable->timeFinish = lastTimeFinish + operation->minuteLimit;
-//     //             newTimetable->next = NULL;
-//     //             timetable->next = newTimetable;
-//     //         }
-//     //         else
-//     //         {
-//     //             timetable->operationIndex = operationIndex;
-//     //             timetable->timeStart = lastTimeFinish;
-//     //             timetable->timeFinish = lastTimeFinish + operation->minuteLimit;
-//     //         }
-//     //         operation->operationStatus = completed;
-//     //         updateStatus(operations, operationIndex);
-//     //     }
-//     // }
-//     int maxTime = 0;
-//     for (int machine = 0; machine < COUNT_MACHINES; machine++)
-//     {
-//         if (nextOperations[machine] != countOperations + 1)
-//         {
-//             int operationIndex = nextOperations[machine];
-//             operation* operation = &operations[operationIndex];
-//             timetableType** timetable = &timetables[machine];
-//             int lastTimeFinish = (*timetable) ? (*timetable)->timeFinish : operation->waitingFor;
-//             while (*timetable != NULL)
-//             {
-//                 timetable = &(*timetable)->next;
-//                 lastTimeFinish = (*timetable) ? (*timetable)->timeFinish : lastTimeFinish;
-//             }
-//             *timetable = malloc(sizeof(timetableType));
-//             (*timetable)->operationIndex = operationIndex;
-//             (*timetable)->timeStart = lastTimeFinish;
-//             (*timetable)->timeFinish = lastTimeFinish + operation->minuteLimit;
-//             (*timetable)->next = NULL;
-//             operation->timetable = *timetable;
-//             operation->operationStatus = completed;
-//             updateStatus(operations, operationIndex);
-//         }
-//     }
-//     *allTimeToFinish = maxTime;
-// }
+void addWaitingOperationsInTimeTable(operation* operations, const int countOperations, timetableType** timetables, int* nextOperations, int* allTimeToFinish)
+{   int maxTime = 0;
+    for (int machine = 0; machine < COUNT_MACHINES; machine++)
+    {
+        if (nextOperations[machine] != countOperations + 1)
+        {
+            int operationIndex = nextOperations[machine];
+            operation* operation = &operations[operationIndex];
+            timetableType** timetable = &timetables[machine];
+            int lastTimeFinish = 0;
+            lastTimeFinish = (*timetable) ? (*timetable)->timeFinish : lastTimeFinish;
+            while (*timetable != NULL)
+            {
+                timetable = &(*timetable)->next;
+                lastTimeFinish = (*timetable) ? (*timetable)->timeFinish : lastTimeFinish;
+            }
+            *timetable = malloc(sizeof(timetableType));
+            (*timetable)->operationIndex = operationIndex;
+            (*timetable)->timeStart = (operation->waitingFor > lastTimeFinish) ? operation->waitingFor : lastTimeFinish;
+            (*timetable)->timeFinish = (*timetable)->timeStart + operation->minuteLimit;
+            maxTime = (maxTime < (*timetable)->timeFinish) ? (*timetable)->timeFinish : maxTime;
+            (*timetable)->next = NULL;
+            operation->timetable = *timetable;
+            operation->operationStatus = inProgress;
+        }
+    }
+    if (maxTime > *allTimeToFinish)
+        *allTimeToFinish = maxTime;
+}
 
 void createTimetable(timetableType** timetables, operation* operations, const int countOperations, int* allTimeToFinish)
 {
     while (!isFinish(operations, countOperations))
     {
-        for (int i = 0; i <= countOperations; i++)
-        {
-            if (operations[i].operationStatus == inProgress)
-            {
-                int countNext = operations[i].countNextOperations;
-                int* nextOperationsIndex = operations[i].nextOperations;
-                for (int j = 0; j < countNext; j++)
-                {
-                    operations[nextOperationsIndex[j]].countDependencies--;
-                    if (operations[nextOperationsIndex[j]].countDependencies == 0)
-                        operations[nextOperationsIndex[j]].operationStatus = waiting;
-                    if (operations[i].timetable->timeFinish > operations[nextOperationsIndex[j]].waitingFor)
-                        operations[nextOperationsIndex[j]].waitingFor = operations[i].timetable->timeFinish;
-                }
-                operations[i].operationStatus = completed;
-            }
-        }
-
-        int maxLens[COUNT_MACHINES] = {0};
+        updateStatus(operations, countOperations);
         int nextOperations[COUNT_MACHINES];
         initNextOperation(nextOperations, countOperations);
-        for (int i = 0; i <= countOperations; i++)
-        {
-            int maxLenToFinish = operations[i].maxLenToFinish;
-            int machine = operations[i].operationType;
-            int status = operations[i].operationStatus;
-            if (status == waiting && maxLenToFinish > maxLens[machine])
-            {
-                maxLens[machine] = maxLenToFinish;
-                nextOperations[machine] = i;
-            }
-
-        }
-
-        int maxTime = 0;
-        for (int machine = 0; machine < COUNT_MACHINES; machine++)
-        {
-            if (nextOperations[machine] != countOperations + 1)
-            {
-                int operationIndex = nextOperations[machine];
-                operation* operation = &operations[operationIndex];
-                timetableType** timetable = &timetables[machine];
-                int lastTimeFinish = 0;
-                lastTimeFinish = (*timetable) ? (*timetable)->timeFinish : lastTimeFinish;
-                while (*timetable != NULL)
-                {
-                    timetable = &(*timetable)->next;
-                    lastTimeFinish = (*timetable) ? (*timetable)->timeFinish : lastTimeFinish;
-                }
-                *timetable = malloc(sizeof(timetableType));
-                (*timetable)->operationIndex = operationIndex;
-                (*timetable)->timeStart = (operation->waitingFor > lastTimeFinish) ? operation->waitingFor : lastTimeFinish;
-                (*timetable)->timeFinish = (*timetable)->timeStart + operation->minuteLimit;
-                maxTime = (maxTime < (*timetable)->timeFinish) ? (*timetable)->timeFinish : maxTime;
-                (*timetable)->next = NULL;
-                operation->timetable = *timetable;
-                operation->operationStatus = inProgress;
-            }
-        }
-        if (maxTime > *allTimeToFinish)
-            *allTimeToFinish = maxTime;
+        insertWaitingMaxLenOperations(operations, countOperations, nextOperations);
+        addWaitingOperationsInTimeTable(operations, countOperations, timetables, nextOperations, allTimeToFinish);
     }
 }
 
@@ -522,7 +446,9 @@ void initTimetables(timetableType** timetables)
 }
 
 void printCompanyTimetable(timetableType** timetables, operation* operations, const int countOperations)
-{}
+{
+    
+}
 
 int main()
 {
@@ -558,7 +484,7 @@ int main()
             {
                 printf("--------------------------------------------------------------\n");
                 printf("All time to finish: %d minute\n", allTimeToFinish);
-                printf("Max len to finish: %d minute\n", maxLenToFinish);
+                // printf("Max len to finish: %d minute\n", maxLenToFinish);
                 printf("--------------------------------------------------------------\n");
             }
             else
