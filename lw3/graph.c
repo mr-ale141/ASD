@@ -612,6 +612,7 @@ int main()
         case 1:
             countOperations = EMPTY_OPERATIONS;
             freeTimetables(timetables);
+            allTimeToFinish = 0;
             readOperationsFile(operations, &countOperations);
             maxLenToFinish = getMaxLenToFinish(operations, indexStartOperation);
             createTimetable(timetables, operations, countOperations, &allTimeToFinish);
