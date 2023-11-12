@@ -1,12 +1,12 @@
 #pragma once
-#include <iostream>
-#include <vector>
 
 class BTree
 {
 public:
-    BTree();
-    int insert();
+    BTree(int N, char* file_name);
+    int ins(char* str);
+    void del(char *str);
+    char* find(char *str);
 
 private:
 
