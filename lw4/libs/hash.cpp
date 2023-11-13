@@ -5,14 +5,15 @@ HashString::HashString()
     unsigned long long pAlpha_pow = pAlpha;
     pAlpha_pows.push_back(1);
     pAlpha_pows.push_back(pAlpha);
-    int lenBit = getBitLen(pAlpha);
-    while (getBitLen(pAlpha_pow *= pAlpha) - getBitLen(*(pAlpha_pows.end() - 1)) >= lenBit - 1)
+    int lenBitPAlpha = getBitLen(pAlpha);
+    while (getBitLen(pAlpha_pow *= pAlpha) - getBitLen(*(pAlpha_pows.end() - 1)) >= lenBitPAlpha - 1)
         pAlpha_pows.push_back(pAlpha_pow);
 
+    int lenBitPByte = getBitLen(pByte);
     unsigned long long pByte_pow = pByte;
     pByte_pows.push_back(1);
     pByte_pows.push_back(pByte);
-    while (getBitLen(pByte_pow *= pByte) - getBitLen(*(pByte_pows.end() - 1)) >= lenBit - 1)
+    while (getBitLen(pByte_pow *= pByte) - getBitLen(*(pByte_pows.end() - 1)) >= lenBitPByte - 1)
         pByte_pows.push_back(pByte_pow);
 }
 
@@ -27,7 +28,7 @@ int HashString::getBitLen(unsigned long long num)
     return count;
 }
 
-unsigned long long HashString::getHashAlphaString(std::string str)
+unsigned long long HashString::getHashStringAlpha(std::string str)
 {
     unsigned long long hash = 0;
     unsigned long long last_pAlpha_pow = *(pAlpha_pows.end() - 1);
@@ -55,7 +56,7 @@ unsigned long long HashString::getHashAlphaString(std::string str)
     return hash;
 }
 
-unsigned long long HashString::getHashString(std::string str)
+unsigned long long HashString::getHashStringByte(std::string str)
 {
     unsigned long long hash = 0;
     unsigned long long last_pByte_pow = *(pByte_pows.end() - 1);

@@ -4,30 +4,48 @@
 храниться и обрабатываться в файле с прямым доступом (12).
 */
 
-// #include "libs/headers/b_tree.hpp"
+#include "libs/headers/b_tree.hpp"
 #include "libs/headers/hash.hpp"
+#include <cstring>
+
+// struct Node
+// {
+//     bool isLeaf;
+//     std::vector<unsigned long long> keys;
+//     std::vector<Node> child;
+// };
 
 int main()
 {
-    // HashString hash();
-    HashString* hash = new HashString();
-    hash->printPows();
-    unsigned long long hashStr;
-    std::string str = "Hello world!";
-    hashStr = hash->getHashString(str);
-    std::cout << "\"" << str << "\" | len = " << str.length() << std::endl;
-    std::cout << hashStr << std::endl;
-    str = "HELLO WORLD!";
-    hashStr = hash->getHashString(str);
-    std::cout << "\"" << str << "\" | len = " << str.length() << std::endl;
-    std::cout << hashStr << std::endl;
-    while (str != "q")
-    {
-        std::cout << "Insert string: ";
-        std::cin >> str;
-        hashStr = hash->getHashString(str);
-        std::cout << "\"" << str << "\" | len = " << str.length() << std::endl;
-        std::cout << hashStr << std::endl;
-    }
+    // HashString hash;
+    // hash.printPows();
+    // unsigned long long hashStr;
+    // std::string str = "Hello world!";
+    // hashStr = hash.getHashStringByte(str);
+    // std::cout << "\"" << str << "\" | len = " << str.length() << std::endl;
+    // std::cout << hashStr << std::endl;
+    // str = "HELLO WORLD!";
+    // hashStr = hash.getHashStringByte(str);
+    // std::cout << "\"" << str << "\" | len = " << str.length() << std::endl;
+    // std::cout << hashStr << std::endl;
+    // std::cout << sizeof(std::vector<unsigned long long>) << std::endl;
+    // std::cout << sizeof(std::vector<Node>) << std::endl;
+    // std::cout << sizeof(Node*) << std::endl;
+    // std::cout << sizeof(bool) << std::endl;
+    // while (str != "q")
+    // {
+    //     std::cout << "Insert string: ";
+    //     std::cin >> str;
+    //     hashStr = hash.getHashStringByte(str);
+    //     std::cout << "\"" << str << "\" | len = " << str.length() << std::endl;
+    //     std::cout << hashStr << std::endl;
+    // }
+    recordStruct record;
+    strcpy(record.firstName, "name");
+    strcpy(record.secondName, "surname");
+    record.age = 32;
+    record.telephone = 79236547;
+    char filaName[] = "1.bin";
+    BTree tree(3, filaName, record);
     return 0;
 }

@@ -5,12 +5,12 @@
 
 class HashString
 {
-    const int pAlpha = 2;
+    const int pAlpha = 53;
     const int pByte = 257;
 public:
     HashString();
-    unsigned long long getHashAlphaString(std::string str);
-    unsigned long long getHashString(std::string str);
+    unsigned long long getHashStringAlpha(std::string str);
+    unsigned long long getHashStringByte(std::string str);
     void printPows();
     int getBitLen(unsigned long long num);
 
