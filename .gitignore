@@ -1,13 +1,3 @@
 $ cat .gitignore
-*.[oa]
-*~
-*.obj
-*.log
-*.cfg
-*.dsk
-*.bak
-*.gpi
-*.exe
 .vscode
 bin
-lw2/out.txt
