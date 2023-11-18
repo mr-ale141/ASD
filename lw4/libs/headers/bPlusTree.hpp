@@ -29,8 +29,8 @@ public:
         this->prev = 0;
         this->record = nullptr;
 
-        keyType *_keys = new keyType[N];
-        for (int i = 0; i < N; i++)
+        keyType *_keys = new keyType[N - 1];
+        for (int i = 0; i < (N - 1); i++)
             _keys[i] = 0;
         this->keys = _keys;
 
@@ -46,6 +46,7 @@ class BPlusTree
 {
     int N;
     index rootIndex;
+    index writeIndex;
     std::size_t sizeBlock;
     Node<recordType, keyType> *rootNode;
     std::fstream file;
@@ -65,6 +66,7 @@ public:
                 exit(1);
             }
             file.read((char *)&sizeBlock, sizeof(sizeBlock));
+            file.read((char *)&writeIndex, sizeof(writeIndex));
             if (rootIndex)
                 readBlock(rootIndex, rootNode);
         }
@@ -75,6 +77,7 @@ public:
             file.open(file_name, std::fstream::binary | std::fstream::in | std::fstream::out);
             N = _N;
             rootIndex = 0;
+            writeIndex = 1;
             std::size_t sizeRecord =
                 sizeof(bool) +
                 2 * sizeof(int) +
@@ -90,6 +93,7 @@ public:
             file.write((char *)&rootIndex, sizeof(rootIndex));
             file.write((char *)&N, sizeof(N));
             file.write((char *)&sizeBlock, sizeof(sizeBlock));
+            file.write((char *)&writeIndex, sizeof(writeIndex));
         }
     }
 
@@ -100,7 +104,18 @@ public:
         file.write((char *)&rootIndex, sizeof(rootIndex));
     }
 
-    void writeBlock(std::size_t index, Node<recordType, keyType> *node)
+    void incWriteIndex()
+    {
+        writeIndex++;
+        file.seekp(
+            sizeof(rootIndex) +
+            sizeof(N) +
+            sizeof(sizeBlock),
+            file.beg);
+        file.write((char *)&writeIndex, sizeof(writeIndex));
+    }
+
+    void writeBlock(index index, Node<recordType, keyType> *node)
     {
         file.seekp(index * sizeBlock, file.beg);
         if (node->isLeaf)
@@ -127,7 +142,7 @@ public:
             file.write((char *)&node->next, sizeof(node->next));
             file.write((char *)&node->prev, sizeof(node->prev));
 
-            for (int i = 0; i < node->N; i++)
+            for (int i = 0; i < (node->N - 1) ; i++)
                 file.write((char *)&node->keys[i], sizeof(node->keys[i]));
 
             for (int i = 0; i < node->N; i++)
@@ -162,7 +177,7 @@ public:
             file.read((char *)&node->next, sizeof(node->next));
             file.read((char *)&node->prev, sizeof(node->prev));
 
-            for (int i = 0; i < node->N; i++)
+            for (int i = 0; i < (node->N - 1) ; i++)
                 file.read((char *)&node->keys[i], sizeof(node->keys[i]));
 
             for (int i = 0; i < node->N; i++)
@@ -172,23 +187,60 @@ public:
 
     void insert(recordType* record)
     {
-        if (rootNode == nullptr)
+        if (rootIndex == 0)
         {
-            rootNode = new Node<recordType, keyType>(N);
+            setNewRootIndex(writeIndex);
+            if (!rootNode)
+                rootNode = new Node<recordType, keyType>(N);
             rootNode->isLeaf = true;
-            rootNode->N = N;
             rootNode->size = 1;
-            rootNode->parent = 0;
-            rootNode->next = 0;
-            rootNode->prev = 0;
             rootNode->record = record;
 
-            setNewRootIndex(1);
             writeBlock(rootIndex, rootNode);
+            incWriteIndex();
+        }
+        else if (rootNode->isLeaf)
+        {
+            Node<recordType, keyType> *newLeaf = new Node<recordType, keyType>(N);
+            newLeaf->isLeaf = true;
+            newLeaf->size = 1;
+            newLeaf->parent = writeIndex + 1;
+            newLeaf->record = record;
+
+            rootNode->parent = writeIndex + 1;
+            writeBlock(rootIndex, rootNode);
+
+            Node<recordType, keyType> *newRoot = new Node<recordType, keyType>(N);
+            newRoot->size = ++(rootNode->size);
+            if (rootNode->record->telephone <= record->telephone)
+            {
+                newRoot->keys[0] = rootNode->record->telephone;
+                newRoot->keys[1] = record->telephone;
+                newRoot->childs[0] = rootIndex;
+                newRoot->childs[1] = writeIndex;
+            }
+            else
+            {
+                newRoot->keys[0] = record->telephone;
+                newRoot->keys[1] = rootNode->record->telephone;
+                newRoot->childs[0] = writeIndex;
+                newRoot->childs[1] = rootIndex;
+            }
+            writeBlock(writeIndex, newLeaf);
+            incWriteIndex();
+            setNewRootIndex(writeIndex);
+            writeBlock(writeIndex, newRoot);
+            incWriteIndex();
+            delete rootNode;
+            delete newLeaf;
+            rootNode = newRoot;
         }
         else
             std::cout << "I can`t write!!!\n";
     }
+
+    // std::size_t del(T &record);
+    // std::size_t find(T &record);
 
     ~BPlusTree()
     {
@@ -202,6 +254,4 @@ public:
             delete rootNode;
         }
     }
-    // std::size_t del(T &record);
-    // std::size_t find(T &record);
 };

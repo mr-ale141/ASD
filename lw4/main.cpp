@@ -29,12 +29,12 @@ int main()
     return 0;
 }
 
-// bool isLeaf;
-// int N;
-// int size;
-// index parent;
-// index next;
-// index prev;
-// recordType *record;
-// keyType *keys;
-// index *childs;
+// bool isLeaf = false;
+// int N = _N;
+// int size = 0;
+// index parent = 0;
+// index next = 0;
+// index prev = 0;
+// recordType *record = nullptr;
+// keyType *keys = new keyType[N];
+// index *childs = new index[N];
