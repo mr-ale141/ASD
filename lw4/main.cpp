@@ -33,6 +33,7 @@ int main()
 // int N = _N;
 // int size = 0;
 // index parent = 0;
+// index current = 0;
 // index next = 0;
 // index prev = 0;
 // recordType *record = nullptr;
