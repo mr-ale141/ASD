@@ -19,23 +19,23 @@ typedef struct recordStruct
 int main()
 {
     char filaName[] = "1.bin";
-    recordType *record = new recordType;
+    auto *record = new recordType;
     record->age = 32;
     record->telephone = 9266328474;
     strcpy(record->firstName, "name");
     strcpy(record->secondName, "surname");
     BPlusTree<recordType, decltype(record->telephone)> tree(3, filaName);
     tree.insert(record);
+    tree.printTree();
     return 0;
 }
 
 // bool isLeaf = false;
-// int N = _N;
-// int size = 0;
+// int N = _N;                    maxChilds
+// int size = 0;                  maxKeys
 // index parent = 0;
 // index current = 0;
-// index next = 0;
-// index prev = 0;
-// recordType *record = nullptr;
-// keyType *keys = new keyType[N];
+// keyType *keys = new keyType[N - 1];
 // index *childs = new index[N];
+
+// recordType *record;            record
