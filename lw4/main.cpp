@@ -21,7 +21,7 @@ int main()
     char filaName[] = "1.bin";
     auto *record = new recordType;
     record->age = 32;
-    record->telephone = 9266328474;
+    record->telephone = 9366328474;
     strcpy(record->firstName, "name");
     strcpy(record->secondName, "surname");
     BPlusTree<recordType, decltype(record->telephone)> tree(3, filaName);
