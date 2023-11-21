@@ -76,11 +76,11 @@ public:
             writeIndex = 1;
             std::size_t sizeRecord = sizeof(recordType);
             std::size_t sizeNode =
-                sizeof(bool) +
-                2 * sizeof(int) +
-                2 * sizeof(indexType) +
-                (N - 1) * sizeof(keyType) +
-                N * sizeof(indexType);
+                    sizeof(bool) +
+                    2 * sizeof(int) +
+                    2 * sizeof(indexType) +
+                    (N - 1) * sizeof(keyType) +
+                    N * sizeof(indexType);
             sizeBlock = (sizeRecord > sizeNode) ? sizeRecord : sizeNode;
             std::size_t remainder = sizeBlock % 16;
             if (remainder)
@@ -103,10 +103,10 @@ public:
     {
         writeIndex++;
         file.seekp(
-            sizeof(rootIndex) +
-            sizeof(N) +
-            sizeof(sizeBlock),
-            this->file.beg);
+                sizeof(rootIndex) +
+                sizeof(N) +
+                sizeof(sizeBlock),
+                this->file.beg);
         file.write((char *)&writeIndex, sizeof(writeIndex));
     }
 
