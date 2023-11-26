@@ -174,27 +174,27 @@ public:
         return node;
     }
 
-    void findNode(keyType newKey)
+    recordType* findRecordInChildTree()
+    {
+
+    }
+
+    recordType* findRecord(keyType key)
     {
         setCurrentNodeRoot();
-        if (currentNode->isLeaf)
-            return;
-        bool find = false;
-        while (!find)
-            for (int i = 0; i < currentNode->size; i++)
-                if (i == currentNode->size - 1 || newKey <= currentNode->keys[i])
+        for (int i = 0; i < currentNode->size; i++)
+            if (key < currentNode->keys[i])
+            {
+                indexType next = currentNode->children[i];
+                delete currentNode;
+                currentNode = readNode(next);
+                if (currentNode->isLeaf)
                 {
-                    indexType next = currentNode->children[i];
-                    delete currentNode;
-                    currentNode = readNode(next);
-                    if (currentNode->isLeaf)
-                    {
-                        find = true;
-                        break;
-                    }
-                    else
-                        break;
+                    break;
                 }
+                else
+                    break;
+            }
     }
 
     void printRecord(recordType* record)
@@ -235,7 +235,39 @@ public:
         }
     }
 
-    
+    void insertInChildTree(indexType index, recordType* record)
+    {
+        delete currentNode;
+        currentNode = readNode(index);
+        if (!currentNode->isLeaf)
+        {
+            for (int i = 0; i < currentNode->size; i++)
+            {
+                if (i == currentNode->size - 1 || record->telephone < currentNode->keys[i])
+            }
+        }
+        else
+        {
+
+        }
+    }
+
+    void insert(recordType* record)
+    {
+        if (rootIndex == 0)
+            createRootAndInsert(record);
+        else
+        {
+            keyType newKey = record->telephone;
+            Node<recordType, keyType> *currNode = findNode(newKey);
+            if (currNode->size < (N - 1))
+                insertRecord(record, currNode);
+            else
+                splitLeafAndInsertRecord(record, currNode);
+        }
+    }
+
+
 
     void createRootAndInsert(recordType* record)
     {
@@ -437,21 +469,6 @@ public:
             delete newParentNode;
             delete parentNode;
             delete newNode;
-        }
-    }
-
-    void insert(recordType* record)
-    {
-        if (rootIndex == 0)
-            createRootAndInsert(record);
-        else
-        {
-            keyType newKey = record->telephone;
-            Node<recordType, keyType> *currNode = findNode(newKey);
-            if (currNode->size < (N - 1))
-                insertRecord(record, currNode);
-            else
-                splitLeafAndInsertRecord(record, currNode);
         }
     }
 
