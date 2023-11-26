@@ -1,6 +1,6 @@
 /*
-    20. Составить   программу  поиска  записи  с  включением  в
-сильно   ветвящемся   Б-дереве   порядка  N.  Б-дерево  должно
+    20. Составить программу поиска записи с включением в
+сильно ветвящемся Б-дереве порядка N. Б-дерево должно
 храниться и обрабатываться в файле с прямым доступом (12).
 */
 
@@ -24,8 +24,17 @@ int main()
     record->telephone = 9366328474;
     strcpy(record->firstName, "name");
     strcpy(record->secondName, "surname");
-    BTree<recordType, decltype(record->telephone)> tree(3, fileName);
-    tree.insert(record);
+    auto tree = BTree<recordType, decltype(record->telephone)>(3, fileName);
+//    tree.insert(record);
     tree.printTree();
     return 0;
 }
+
+//bool isLeaf;
+//int N;
+//int size;
+//indexType parent;
+//indexType current;
+//keyType *keys;                 [2 * N - 1]
+//indexType *children;           [2 * N]
+//recordType* data;              [2 * N - 1]
