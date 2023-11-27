@@ -247,12 +247,12 @@ public:
         std::cout << "{ ";
         for (int i = 0; i < (2 * N - 1); i++)
         {
-            printf("%5d", node->keys[i]);
+            printf("%3d", node->keys[i]);
             if (i != (2 * N - 2))
                 std::cout << " | ";
         }
         std::cout << " }\n";
-        count += 41;
+        count += 32;
         for (int i = 0; i <= node->size; i++)
         {
             if (node->children[i])
