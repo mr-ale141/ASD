@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <variant>
+#include <stdio.h>
 
 typedef unsigned long long indexType;
 
@@ -174,50 +175,94 @@ public:
         return node;
     }
 
-    recordType* findRecordInChildTree()
+    recordType* findRecordInChildTree(keyType key, indexType index)
     {
-
+        if (!index)
+            return nullptr;
+        delete currentNode;
+        currentNode = readNode(index);
+        for (int i = 0; i < currentNode->size; i++)
+            if (key < currentNode->keys[i])
+                return findRecordInChildTree(key, currentNode->children[i]);
+            else if (key == currentNode->keys[i])
+                return &(currentNode->data[i]);
+        return findRecordInChildTree(key, currentNode->children[currentNode->size]);
     }
 
     recordType* findRecord(keyType key)
     {
-        setCurrentNodeRoot();
-        for (int i = 0; i < currentNode->size; i++)
-            if (key < currentNode->keys[i])
-            {
-                indexType next = currentNode->children[i];
-                delete currentNode;
-                currentNode = readNode(next);
-                if (currentNode->isLeaf)
-                {
-                    break;
-                }
-                else
-                    break;
-            }
+        return findRecordInChildTree(key, rootIndex);
     }
 
     void printRecord(recordType* record)
     {
-        std::cout << "Record:\n";
-        std::cout << "          F_Name:" << record->firstName << "\n";
-        std::cout << "          S_Name:" << record->secondName << "\n";
-        std::cout << "          Age   :" << record->age << "\n";
-        std::cout << "          Phone :" << record->telephone << "\n";
+        if (record)
+        {
+            std::cout << "Record:\n";
+            std::cout << "          F_Name:" << record->firstName << "\n";
+            std::cout << "          S_Name:" << record->secondName << "\n";
+            std::cout << "          Age   :" << record->age << "\n";
+            std::cout << "          Phone :" << record->telephone << "\n";
+        }
+        else
+        {
+            std::cout << "Record is empty!\n";
+        }
     }
 
-    void printNode(indexType index)
+    void printRecordsInNode(indexType index)
     {
         if (!index)
             return;
-        delete currentNode;
-        currentNode = readNode(index);
-        for (int i = 0; i < currentNode->size; i++)
+        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
+        node = readNode(index);
+        for (int i = 0; i < node->size; i++)
         {
-            printNode(currentNode->children[i]);
-            printRecord(&(currentNode->data[i]));
+            printRecordsInNode(node->children[i]);
+            printRecord(&(node->data[i]));
         }
-        printNode(currentNode->size);
+        printRecordsInNode(node->children[node->size]);
+        delete node;
+    }
+
+    void printRecords()
+    {
+        if (!rootIndex)
+        {
+            std::cout << "________EMPTY_TREE________\n";
+            return;
+        }
+        else
+        {
+            std::cout << "___________RECORDS__________\n";
+            printRecordsInNode(rootIndex);
+            std::cout << "___________________________\n";
+        }
+    }
+
+    void printNode(indexType index, int count)
+    {
+        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
+        node = readNode(index);
+        std::cout << "{ ";
+        for (int i = 0; i < (2 * N - 1); i++)
+        {
+            printf("%5d", node->keys[i]);
+            if (i != (2 * N - 2))
+                std::cout << " | ";
+        }
+        std::cout << " }\n";
+        count += 41;
+        for (int i = 0; i <= node->size; i++)
+        {
+            if (node->children[i])
+            {
+                for (int j = 0; j < count; j++)
+                    std::cout << " ";
+                printNode(node->children[i], count);
+            }
+        }
+        delete node;
     }
 
     void printTree()
@@ -229,27 +274,146 @@ public:
         }
         else
         {
+            int count = 0;
             std::cout << "___________B-TREE_________\n";
-            printNode(rootIndex);
+            printNode(rootIndex, count);
             std::cout << "__________________________\n";
         }
     }
 
-    void insertInChildTree(indexType index, recordType* record)
+    void insertRecord(Node<recordType, keyType>* node, recordType* record, indexType child = 0)
     {
-        delete currentNode;
-        currentNode = readNode(index);
-        if (!currentNode->isLeaf)
+        int i;
+        auto *_keys = new keyType[2 * N - 1];
+        auto *_children = new indexType[2 * N];
+        auto *_data = new recordType[2 * N - 1];
+        for (i = 0; i < (2 * N - 1); i++)
+            _keys[i] = 0;
+        for (i = 0; i < (2 * N); i++)
+            _children[i] = 0;
+        for (i = 0; i < node->size; i++)
         {
-            for (int i = 0; i < currentNode->size; i++)
+            if (record->telephone > node->keys[i])
             {
-                if (i == currentNode->size - 1 || record->telephone < currentNode->keys[i])
+                _keys[i] = node->keys[i];
+                _children[i] = node->children[i];
+                _data[i] = node->data[i];
+            }
+            else
+                break;
+        }
+        _keys[i] = record->telephone;
+        _children[i] = child;
+        _data[i] = *record;
+        node->size++;
+        for (i++; i < node->size; i++)
+        {
+            _keys[i] = node->keys[i-1];
+            _data[i] = node->data[i-1];
+            _children[i] = node->children[i-1];
+        }
+        _children[i] = node->children[i-1];
+        delete[] node->keys;
+        delete[] node->children;
+        delete[] node->data;
+        node->keys = _keys;
+        node->children = _children;
+        node->data = _data;
+    }
+
+    Node<recordType, keyType>* insertInChildTree(indexType index, recordType* record)
+    {
+        if (!index)
+            return nullptr;
+        Node<recordType, keyType>* node;
+        node = readNode(index);
+        if (!node->isLeaf)
+        {
+            Node<recordType, keyType>* childNode;
+            int i;
+            for (i = 0; i < node->size; i++)
+            {
+                if (record->telephone < node->keys[i])
+                {
+                    indexType next = node->children[i];
+                    childNode = insertInChildTree(next, record);
+                    break;
+                }
+            }
+            if (i == node->size)
+            {
+                indexType next = node->children[node->size];
+                childNode = insertInChildTree(next, record);
+            }
+            if (childNode && childNode->size == (2 * N - 1))
+            {
+                auto *_keys = new keyType[2 * N - 1];
+                auto *_children = new indexType[2 * N];
+                auto *_data = new recordType[2 * N - 1];
+                for (i = 0; i < (2 * N - 1); i++)
+                    _keys[i] = 0;
+                for (i = 0; i < (2 * N); i++)
+                    _children[i] = 0;
+                auto* newNode = new Node<recordType, keyType>(N);
+                newNode->isLeaf = childNode->isLeaf;
+                newNode->parent = node->current;
+                newNode->current = writeIndex;
+                newNode->size = N - 1;
+                for (i = 0; i < (N - 1); i++)
+                {
+                    newNode->keys[i] = childNode->keys[i];
+                    newNode->children[i] = childNode->children[i];
+                    newNode->data[i] = childNode->data[i];
+                }
+                recordType* movedDataUp = &childNode->data[i];
+                insertRecord(node, movedDataUp, newNode->current);
+                writeNode(newNode->current, newNode);
+                delete newNode;
+                int j = 0;
+                for (i++; j < (N - 1); i++, j++)
+                {
+                    _keys[j] = childNode->keys[i];
+                    _children[j] = childNode->children[i];
+                    _data[j] = childNode->data[i];
+                }
+                _children[j] = childNode->children[i];
+                delete[] childNode->keys;
+                delete[] childNode->children;
+                delete[] childNode->data;
+                childNode->keys = _keys;
+                childNode->children = _children;
+                childNode->data = _data;
+                childNode->size = N - 1;
+                writeNode(childNode->current, childNode);
+                delete childNode;
             }
         }
         else
         {
-
+            insertRecord(node, record);
         }
+        writeNode(node->current, node);
+        return node;
+    }
+
+    void createRootAndInsert(recordType* record, indexType childLeft = 0, indexType childRight = 0)
+    {
+        bool isLeaf;
+        if (!rootIndex)
+            isLeaf = true;
+        else
+            isLeaf = false;
+        setNewRootIndex(writeIndex);
+        auto* newRoot = new Node<recordType, keyType>(N);
+        newRoot->isLeaf = isLeaf;
+        newRoot->size = 1;
+        newRoot->current = rootIndex;
+        newRoot->keys[0] = record->telephone;
+        newRoot->data[0] = *record;
+        newRoot->children[0] = childLeft;
+        newRoot->children[1] = childRight;
+        writeNode(newRoot->current, newRoot);
+        delete newRoot;
     }
 
     void insert(recordType* record)
@@ -258,217 +422,50 @@ public:
             createRootAndInsert(record);
         else
         {
-            keyType newKey = record->telephone;
-            Node<recordType, keyType> *currNode = findNode(newKey);
-            if (currNode->size < (N - 1))
-                insertRecord(record, currNode);
-            else
-                splitLeafAndInsertRecord(record, currNode);
-        }
-    }
-
-
-
-    void createRootAndInsert(recordType* record)
-    {
-        keyType newKey = record->telephone;
-        indexType indexRecord = writeRecord(record);
-        setNewRootIndex(writeIndex);
-        currentNode = new Node<recordType, keyType>(N);
-        currentNode->isLeaf = true;
-        currentNode->size = 1;
-        currentNode->current = rootIndex;
-        currentNode->keys[0] = newKey;
-        currentNode->children[0] = indexRecord;
-        writeNode(rootIndex, currentNode);
-    }
-
-    void insertKey(keyType newKey, indexType indexLink, Node<recordType, keyType>* currNode)
-    {
-        Node<recordType, keyType> *newCurrNode = readNode(currNode->current);
-        newCurrNode->size++;
-        bool find = false;
-        for (int i = 0; i < currNode->size; i++)
-            if (find)
+            delete currentNode;
+            currentNode = insertInChildTree(rootIndex, record);
+            if (currentNode->size == (2 * N - 1))
             {
-                newCurrNode->keys[i + 1] = currNode->keys[i];
-                newCurrNode->children[i + 1] = currNode->children[i];
-            }
-            else
-            {
-                if (newKey <= currNode->keys[i])
+                int i;
+                auto *_keys = new keyType[2 * N - 1];
+                auto *_children = new indexType[2 * N];
+                auto *_data = new recordType[2 * N - 1];
+                for (i = 0; i < (2 * N - 1); i++)
+                    _keys[i] = 0;
+                for (i = 0; i < (2 * N); i++)
+                    _children[i] = 0;
+                auto* newNode = new Node<recordType, keyType>(N);
+                newNode->isLeaf = currentNode->isLeaf;
+                newNode->parent = writeIndex + 1;
+                newNode->current = writeIndex;
+                newNode->size = N - 1;
+                for (i = 0; i < (N - 1); i++)
                 {
-                    newCurrNode->keys[i] = newKey;
-                    newCurrNode->children[i] = indexLink;
-                    newCurrNode->keys[i + 1] = currNode->keys[i];
-                    newCurrNode->children[i + 1] = currNode->children[i];
-                    find = true;
+                    newNode->keys[i] = currentNode->keys[i];
+                    newNode->children[i] = currentNode->children[i];
+                    newNode->data[i] = currentNode->data[i];
                 }
-                else if (i == (currNode->size - 1))
+                writeNode(newNode->current, newNode);
+                recordType* movedDataUp = &currentNode->data[i];
+                createRootAndInsert(movedDataUp, newNode->current, currentNode->current);
+                delete newNode;
+                int j = 0;
+                for (i++; j < (N - 1); i++, j++)
                 {
-                    newCurrNode->keys[i + 1] = newKey;
-                    newCurrNode->children[i + 1] = indexLink;
-                    find = true;
+                    _keys[j] = currentNode->keys[i];
+                    _children[j] = currentNode->children[i];
+                    _data[j] = currentNode->data[i];
                 }
+                _children[j] = currentNode->children[i];
+                delete[] currentNode->keys;
+                delete[] currentNode->children;
+                delete[] currentNode->data;
+                currentNode->keys = _keys;
+                currentNode->children = _children;
+                currentNode->data = _data;
+                currentNode->size = N - 1;
+                writeNode(currentNode->current, currentNode);
             }
-        writeNode(newCurrNode->current, newCurrNode);
-        delete newCurrNode;
-    }
-
-    void splitLeafAndInsertRecord(recordType *record, Node<recordType, keyType>* currNode)
-    {
-        indexType indexRecord = writeRecord(record);
-        keyType newKey = record->telephone;
-
-        Node<recordType, keyType>* newLeaf = new Node<recordType, keyType>(N);
-        newLeaf->isLeaf = true;
-        newLeaf->parent = currNode->parent;
-        newLeaf->current = writeIndex;
-        newLeaf->children[N - 1] = currNode->current;
-
-        Node<recordType, keyType>* newCurrNode = new Node<recordType, keyType>(N);
-        newCurrNode->isLeaf = true;
-        newCurrNode->parent = currNode->parent;
-        newCurrNode->current = currNode->current;
-        newCurrNode->children[N - 1] = currNode->children[N - 1];
-
-        int i;
-        for (i = 0; i < (currNode->size - 1); i++)
-        {
-            if (newKey <= currNode->keys[i])
-            {
-                newLeaf->keys[i] = newKey;
-                newLeaf->children[i] = indexRecord;
-                newLeaf->size = i + 1;
-                break;
-            }
-            else
-            {
-                newLeaf->keys[i] = currNode->keys[i];
-                newLeaf->children[i] = currNode->children[i];
-                newLeaf->size = i + 1;
-            }
-        }
-
-        if (i == (currNode->size - 1))
-        {
-            newCurrNode->keys[0] = newKey;
-            newCurrNode->children[0] = indexRecord;
-            newCurrNode->size = 1;
-        }
-        else
-        {
-            for (int j = 0; i < (currNode->size - 1); i++, j++)
-            {
-                newCurrNode->keys[j] = currNode->keys[i];
-                newCurrNode->children[j] = currNode->children[i];
-                newCurrNode->size = j + 1;
-            }
-        }
-
-        writeNode(newCurrNode->current, newCurrNode);
-        writeNode(newLeaf->current, newLeaf);
-
-        keyType keySplitter = newLeaf->keys[newLeaf->size - 1];
-
-        if (currNode->parent == 0)
-        {
-            setNewRootIndex(writeIndex + 1);
-            currentNode = new Node<recordType, keyType>(N);
-            currentNode->size = 1;
-            currentNode->current = rootIndex;
-            currentNode->keys[0] = keySplitter;
-            currentNode->children[0] = newLeaf->current;
-            currentNode->children[N - 1] = newCurrNode->current;
-
-            newLeaf->parent = rootIndex;
-            newCurrNode->parent = rootIndex;
-            writeNode(rootIndex, currentNode);
-        }
-        else
-            updateParent(
-                    currNode->parent,
-                    newLeaf->current,
-                    keySplitter);
-
-        delete newCurrNode;
-        delete currNode;
-        delete newLeaf;
-    }
-
-    void updateParent(indexType parentIndex, indexType newChildIndex, indexType keySplitter)
-    {
-        Node<recordType, keyType>* parentNode = readNode(parentIndex);
-        if (parentNode->size < (N - 1))
-            insertKey(keySplitter, newChildIndex, parentNode);
-        else
-        {
-            Node<recordType, keyType>* newNode = new Node<recordType, keyType>(N);
-            newNode->parent = parentNode->parent;
-            newNode->current = writeIndex;
-
-            Node<recordType, keyType>* newParentNode = new Node<recordType, keyType>(N);
-            newParentNode->parent = parentNode->parent;
-            newParentNode->current = parentNode->current;
-
-            int i;
-            for (i = 0; i < (parentNode->size - 1); i++)
-            {
-                if (keySplitter <= parentNode->keys[i])
-                {
-                    newNode->keys[i] = keySplitter;
-                    newNode->children[i] = newChildIndex;
-                    newNode->size = i + 1;
-                    break;
-                }
-                else
-                {
-                    newNode->keys[i] = parentNode->keys[i];
-                    newNode->children[i] = parentNode->children[i];
-                    newNode->size = i + 1;
-                }
-            }
-
-            if (i == (parentNode->size - 1))
-            {
-                newParentNode->keys[0] = keySplitter;
-                newParentNode->children[0] = newChildIndex;
-                newParentNode->size = 1;
-            }
-            else
-            {
-                for (int j = 0; i < (parentNode->size - 1); i++, j++)
-                {
-                    newParentNode->keys[j] = parentNode->keys[i];
-                    newParentNode->children[j] = parentNode->children[i];
-                    newParentNode->size = j + 1;
-                }
-            }
-
-            writeNode(newParentNode->current, newParentNode);
-            writeNode(newNode->current, newNode);
-
-            keySplitter = newNode->keys[newNode->size - 1];
-            if (parentNode->parent == 0)
-            {
-                setNewRootIndex(writeIndex + 1);
-                currentNode = new Node<recordType, keyType>(N);
-                currentNode->size = 1;
-                currentNode->current = rootIndex;
-                currentNode->keys[0] = keySplitter;
-                currentNode->children[0] = newNode->current;
-                currentNode->children[N - 1] = newParentNode->current;
-
-                newNode->parent = rootIndex;
-                newParentNode->parent = rootIndex;
-                writeNode(rootIndex, currentNode);
-            }
-            else
-                updateParent(parentNode->parent, newNode->current, keySplitter);
-
-            delete newParentNode;
-            delete parentNode;
-            delete newNode;
         }
     }
 

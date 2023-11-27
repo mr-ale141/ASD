@@ -21,11 +21,13 @@ int main()
     char fileName[] = "1.bin";
     auto *record = new recordType;
     record->age = 32;
-    record->telephone = 9366328474;
+    record->telephone = 7;
     strcpy(record->firstName, "name");
     strcpy(record->secondName, "surname");
     auto tree = BTree<recordType, decltype(record->telephone)>(3, fileName);
-//    tree.insert(record);
+    tree.insert(record);
+//    tree.printRecord(tree.findRecord(10));
+//    tree.printRecords();
     tree.printTree();
     return 0;
 }
