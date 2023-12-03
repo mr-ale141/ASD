@@ -5,7 +5,7 @@
 */
 
 #include "libs/headers/bTree.hpp"
-#include <cstring>
+//#include <cstring>
 
 typedef struct recordStruct
 {
@@ -20,31 +20,28 @@ int main()
 {
     char fileName[] = "1.bin";
     auto *record = new recordType;
-    record->age = 32;
-    record->telephone = 7;
-    strcpy(record->firstName, "name");
-    strcpy(record->secondName, "surname");
-    auto tree = BTree<recordType, decltype(record->telephone)>(3, fileName);
-//    tree.insert(record);
-//    tree.printRecord(tree.findRecord(10));
-//    tree.printRecords();
-//    tree.printTree();
+    auto tree = BTree<recordType, decltype(record->telephone)>(2, fileName);
     int i;
     std::cout << "1 - insert\n";
     std::cout << "2 - print records\n";
-    std::cout << "3 - found record\n";
+    std::cout << "3 - find record\n";
     std::cout << "4 - print tree\n";
+    std::cout << "5 - del key\n";
     std::cout << "0 - exit\n";
     std::cout << "cmd-> ";
     std::cin >> i;
-    unsigned long long newKey;
     while (i)
     {
         switch (i) {
             case 1:
-                std::cout << "insert key: ";
-                std::cin >> newKey;
-                record->telephone = newKey;
+                std::cout << "Insert First Name: ";
+                std::cin >> record->firstName;
+                std::cout << "Insert Second Name: ";
+                std::cin >> record->secondName;
+                std::cout << "Insert age: ";
+                std::cin >> record->age;
+                std::cout << "Insert key: ";
+                std::cin >> record->telephone;
                 tree.insert(record);
                 tree.printTree();
                 break;
@@ -52,20 +49,31 @@ int main()
                 tree.printRecords();
                 break;
             case 3:
-                std::cout << "insert key for found: ";
-                std::cin >> newKey;
-                tree.printRecord(tree.findRecord(newKey));
+                unsigned long long findKey;
+                std::cout << "\nInsert key for found: ";
+                std::cin >> findKey;
+                std::cout << "___________RECORD__________\n";
+                tree.printRecord(tree.findRecord(findKey));
+                std::cout << "___________________________\n";
                 break;
             case 4:
-                tree.printRecords();
+                tree.printTree();
+                break;
+            case 5:
+                unsigned long long delKey;
+                std::cout << "\nInsert key for del: ";
+                std::cin >> delKey;
+                tree.del(delKey);
+                tree.printTree();
                 break;
             default:
                 break;
         }
         std::cout << "1 - insert\n";
         std::cout << "2 - print records\n";
-        std::cout << "3 - found record\n";
+        std::cout << "3 - find record\n";
         std::cout << "4 - print tree\n";
+        std::cout << "5 - del key\n";
         std::cout << "0 - exit\n";
         std::cout << "cmd-> ";
         std::cin >> i;
