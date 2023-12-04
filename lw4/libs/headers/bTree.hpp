@@ -51,25 +51,25 @@ class BTree
     std::size_t sizeBlock;
     Node<recordType, keyType> *currentNode;
     std::fstream file;
-    char* fileName;
+    char fileName[20];
 
 public:
-    BTree(int treeN, char* file_name)
+    BTree()
     {
         currentNode = nullptr;
-        fileName = file_name;
-        file.open(file_name, std::fstream::in | std::fstream::out | std::fstream::binary);
+        std::cout << "Insert file name: ";
+        std::cin >> fileName;
+        file.open(fileName, std::fstream::in | std::fstream::out | std::fstream::binary);
         if (!file)
-            createNewFile(treeN, file_name);
+        {
+            std::cout << "File not found! Insert degree of B-Tree: ";
+            std::cin >> N;
+            createNewFile(N, fileName);
+        }
         else
         {
             file.read((char *)&rootIndex, sizeof(rootIndex));
             file.read((char *)&N, sizeof(N));
-            if (N != treeN)
-            {
-                std::cout << "ERROR!!! N(program) != N(file)\n";
-                exit(1);
-            }
             file.read((char *)&sizeBlock, sizeof(sizeBlock));
             file.read((char *)&writeIndex, sizeof(writeIndex));
             setCurrentNodeRoot();
@@ -584,7 +584,9 @@ public:
     void delKeyInChildTree(indexType index, keyType delKey)
     {
         Node<recordType, keyType>* node = findNodeInChildTree(delKey, index);
-        if (node->isLeaf)
+        if (!node)
+            std::cout << "Key not found!!!!\n";
+        else if (node->isLeaf)
         {
             if (delInLeaf(node->current, delKey) < N-1)
             {
@@ -622,7 +624,7 @@ public:
         indexType indexParentKey = i;
         Node<recordType, keyType>* brotherLeft = nullptr;
         Node<recordType, keyType>* brotherRight = nullptr;
-        if (indexParentKey == 0 || indexParentKey < parentNode->size) //////////////////
+        if (indexParentKey == 0 || indexParentKey < parentNode->size)
         {
             brotherRight = readNode(parentNode->children[i + 1]);
         }
@@ -684,6 +686,16 @@ public:
                 brotherRight->data = node->data;
                 brotherRight->children = node->children;
                 brotherRight->size = i;
+                if (!brotherRight->isLeaf)
+                {
+                    for (int j = 0; j <= brotherRight->size; j++)
+                    {
+                        Node<recordType, keyType>* updateChildNode = readNode(brotherRight->children[j]);
+                        updateChildNode->parent = brotherRight->current;
+                        writeNode(updateChildNode->current, updateChildNode);
+                        delete updateChildNode;
+                    }
+                }
                 writeNode(brotherRight->current, brotherRight);
                 indexNodeAfterSplit = brotherRight->current;
 
@@ -716,6 +728,16 @@ public:
                 node->data = brotherLeft->data;
                 node->children = brotherLeft->children;
                 node->size = i;
+                if (!brotherLeft->isLeaf)
+                {
+                    for (int j = 0; j <= brotherLeft->size; j++)
+                    {
+                        Node<recordType, keyType>* updateChildNode = readNode(brotherLeft->children[j]);
+                        updateChildNode->parent = brotherLeft->current;
+                        writeNode(updateChildNode->current, updateChildNode);
+                        delete updateChildNode;
+                    }
+                }
                 writeNode(node->current, node);
                 indexNodeAfterSplit = node->current;
 
@@ -753,11 +775,15 @@ public:
         currentNode = readNode(rootIndex);
         if (currentNode->isLeaf)
         {
-            if (!delInLeaf(currentNode->current, delKey))
+            Node<recordType, keyType>* node = findNodeInChildTree(delKey, rootIndex);
+            if (!node)
+                std::cout << "Key not found!!!!\n";
+            else if (!delInLeaf(currentNode->current, delKey))
             {
                 file.close();
                 createNewFile(N, fileName);
             }
+            delete node;
         }
         else
         {

@@ -18,9 +18,8 @@ typedef struct recordStruct
 
 int main()
 {
-    char fileName[] = "1.bin";
     auto *record = new recordType;
-    auto tree = BTree<recordType, decltype(record->telephone)>(2, fileName);
+    auto tree = BTree<recordType, decltype(record->telephone)>();
     int i;
     std::cout << "1 - insert\n";
     std::cout << "2 - print records\n";
