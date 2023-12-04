@@ -62,7 +62,9 @@ public:
         file.open(fileName, std::fstream::in | std::fstream::out | std::fstream::binary);
         if (!file)
         {
-            std::cout << "File not found! Insert degree of B-Tree: ";
+            std::cout << "File not found!\n";
+	    std::cout << "Create file '" << fileName << "'!!\n";
+	    std::cout << "Insetr degree B-Tree:";
             std::cin >> N;
             createNewFile(N, fileName);
         }
