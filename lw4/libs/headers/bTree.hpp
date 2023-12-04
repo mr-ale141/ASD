@@ -277,7 +277,7 @@ public:
         std::cout << "{ ";
         for (int i = 0; i < (2 * N - 2); i++)
         {
-            printf("%3d", node->keys[i]);
+            printf("%3lld", node->keys[i]);
             if (i != (2 * N - 3))
                 std::cout << " | ";
         }
