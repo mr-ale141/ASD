@@ -30,18 +30,22 @@ public:
         parent = 0;
         current = 0;
 
-        auto *_keys = new keyType[2 * N - 1];
+        keys = new keyType[2 * N - 1];
         for (int i = 0; i < (2 * N - 1); i++)
-            _keys[i] = 0;
-        keys = _keys;
+            keys[i] = 0;
 
-        auto *_children = new indexType[2 * N];
+        children = new indexType[2 * N];
         for (int i = 0; i < (2 * N); i++)
-            _children[i] = 0;
-        children = _children;
+            children[i] = 0;
 
-        auto *_data = new recordType[2 * N - 1];
-        data = _data;
+        data = new recordType[2 * N - 1];
+    }
+
+    ~Node()
+    {
+        delete[] keys;
+        delete[] children;
+        delete[] data;
     }
 };
 
@@ -117,12 +121,7 @@ public:
     {
         this->file.close();
         if (currentNode)
-        {
-            delete[] currentNode->keys;
-            delete[] currentNode->data;
-            delete[] currentNode->children;
             delete currentNode;
-        }
     }
 
     void setCurrentNodeRoot()
@@ -181,7 +180,7 @@ public:
 
     Node<recordType, keyType>* readNode(indexType index)
     {
-        auto node = new Node<recordType, keyType>(N);
+        auto* node = new Node<recordType, keyType>(N);
 
         file.seekg(index * sizeBlock, this->file.beg);
 
@@ -210,12 +209,19 @@ public:
         if (!index)
             return nullptr;
         Node<recordType, keyType>* node = readNode(index);
+        indexType next;
         for (int i = 0; i < node->size; i++)
             if (key < node->keys[i])
-                return findNodeInChildTree(key, node->children[i]);
+            {
+                next = node->children[i];
+                delete node;
+                return findNodeInChildTree(key, next);
+            }
             else if (key == node->keys[i])
                 return node;
-        return findNodeInChildTree(key, node->children[node->size]);
+        next = node->children[node->size];
+        delete node;
+        return findNodeInChildTree(key, next);
     }
 
     recordType* findRecordInChildTree(keyType key, indexType index, int count, bool withPrint)
@@ -278,8 +284,7 @@ public:
     {
         if (!index)
             return;
-        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
-        node = readNode(index);
+        Node<recordType, keyType>* node = readNode(index);
         for (int i = 0; i < node->size; i++)
         {
             printRecordsInNode(node->children[i]);
@@ -309,8 +314,7 @@ public:
         int countCurrent = 0;
         if (!index)
             return countCurrent;
-        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
-        node = readNode(index);
+        Node<recordType, keyType>* node = readNode(index);
         countCurrent += node->size;
         for (int i = 0; i < node->size; i++)
             countCurrent += countKeysInNode(node->children[i]);
@@ -332,7 +336,7 @@ public:
         std::cout << "{ ";
         for (int i = 0; i < (2 * N - 2); i++)
         {
-            printf("%3lld", node->keys[i]);
+            printf("%11lld", node->keys[i]);
             if (i != (2 * N - 3))
                 std::cout << " | ";
         }
@@ -351,8 +355,7 @@ public:
 
     void printNodes(indexType index, int count)
     {
-        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
-        node = readNode(index);
+        Node<recordType, keyType>* node = readNode(index);
         printNode(node);
         count += SIZE_TAB;
         for (int i = 0; i <= node->size; i++)
@@ -602,7 +605,7 @@ public:
             countNodes--;
             unsigned long long newKey = getRandomULL(89010000000, 89999999999);
             while(findRecord(newKey, false))
-                newKey = getRandomULL(0ULL, INT64_MAX);
+                newKey = getRandomULL(89010000000, 89999999999);
             recordType* record = new recordType;
             std::string firstName = std::to_string(newKey);
             std::string secondName = std::to_string(newKey);
@@ -618,18 +621,30 @@ public:
     recordType* getRecordWithMaxKey(indexType index)
     {
         Node<recordType, keyType>* node = readNode(index);
+        indexType next;
         while(!node->isLeaf)
-            node = readNode(node->children[node->size]);
+        {
+            next = node->children[node->size];
+            delete node;
+            node = readNode(next);
+        }
         recordType* record = &(node->data[node->size - 1]);
+        delete node;
         return record;
     }
 
     recordType* getRecordWithMinKey(indexType index)
     {
         Node<recordType, keyType>* node = readNode(index);
+        indexType next;
         while(!node->isLeaf)
-            node = readNode(node->children[0]);
+        {
+            next = node->children[0];
+            delete node;
+            node = readNode(next);
+        }
         recordType* record = &(node->data[0]);
+        delete node;
         return record;
     }
 
