@@ -3,8 +3,10 @@
 #include <fstream>
 #include <variant>
 #include <stdio.h>
+#include <random>
 
 typedef unsigned long long indexType;
+constexpr int SIZE_TAB = 4;
 
 template <typename recordType, typename keyType>
 class Node
@@ -52,11 +54,17 @@ class BTree
     Node<recordType, keyType> *currentNode;
     std::fstream file;
     char fileName[20];
+    struct PRNG
+    {
+        std::mt19937 engine;
+    };
+    PRNG generator;
 
 public:
     BTree()
     {
         currentNode = nullptr;
+        initGenerator();
         std::cout << "Insert file name: ";
         std::cin >> fileName;
         file.open(fileName, std::fstream::in | std::fstream::out | std::fstream::binary);
@@ -207,23 +215,43 @@ public:
         return findNodeInChildTree(key, node->children[node->size]);
     }
 
-    recordType* findRecordInChildTree(keyType key, indexType index)
+    recordType* findRecordInChildTree(keyType key, indexType index, int count, bool withPrint)
     {
         if (!index)
             return nullptr;
+        else
+            if (withPrint)
+                printTab(count);
         delete currentNode;
         currentNode = readNode(index);
+        if (withPrint)
+            printNode(currentNode);
+        count += SIZE_TAB;
         for (int i = 0; i < currentNode->size; i++)
             if (key < currentNode->keys[i])
-                return findRecordInChildTree(key, currentNode->children[i]);
+                return findRecordInChildTree(key, currentNode->children[i], count, withPrint);
             else if (key == currentNode->keys[i])
                 return &(currentNode->data[i]);
-        return findRecordInChildTree(key, currentNode->children[currentNode->size]);
+        return findRecordInChildTree(key, currentNode->children[currentNode->size], count, withPrint);
     }
 
-    recordType* findRecord(keyType key)
+    recordType* findRecord(keyType key, bool withPrint)
     {
-        return findRecordInChildTree(key, rootIndex);
+        recordType* record = nullptr;
+        if (!rootIndex)
+        {
+            std::cout << "________EMPTY_TREE________\n";
+        }
+        else
+        {
+            int count = 0;
+            if (withPrint)
+                std::cout << "_________FIND_HISTORY______\n";
+            record = findRecordInChildTree(key, rootIndex, count, withPrint);
+            if (withPrint)
+                std::cout << "___________________________\n";
+        }
+        return record;
     }
 
     void printRecord(recordType* record)
@@ -272,10 +300,8 @@ public:
         }
     }
 
-    void printNode(indexType index, int count)
+    void printNode(Node<recordType, keyType>* node)
     {
-        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
-        node = readNode(index);
         std::cout << "{ ";
         for (int i = 0; i < (2 * N - 2); i++)
         {
@@ -284,14 +310,30 @@ public:
                 std::cout << " | ";
         }
         std::cout << " }\n";
-        count += 12 * N - 11;
+    }
+
+    void printTab(int count)
+    {
+        if (count)
+            for (int j = 0; j < count; j++)
+                if (j % SIZE_TAB == 0 && j != 0)
+                    std::cout << "|";
+                else
+                    std::cout << " ";
+    }
+
+    void printNodes(indexType index, int count)
+    {
+        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
+        node = readNode(index);
+        printNode(node);
+        count += SIZE_TAB;
         for (int i = 0; i <= node->size; i++)
         {
             if (node->children[i])
             {
-                for (int j = 0; j < count; j++)
-                    std::cout << " ";
-                printNode(node->children[i], count);
+                printTab(count);
+                printNodes(node->children[i], count);
             }
         }
         delete node;
@@ -308,7 +350,7 @@ public:
         {
             int count = 0;
             std::cout << "___________B-TREE_________\n";
-            printNode(rootIndex, count);
+            printNodes(rootIndex, count);
             std::cout << "__________________________\n";
         }
     }
@@ -520,6 +562,23 @@ public:
                 currentNode->parent = rootIndex;
                 writeNode(currentNode->current, currentNode);
             }
+        }
+    }
+
+    void insertRandom(int countNodes)
+    {
+        while (countNodes != 0)
+        {
+            countNodes--;
+            unsigned long long newKey = getRandomULL(89010000000, 89999999999);
+            while(findRecord(newKey, false))
+                newKey = getRandomULL(0ULL, INT64_MAX);
+            recordType* record = new recordType;
+            ulltoa(newKey, record->firstName, 10);
+            ulltoa(newKey, record->secondName, 10);
+            record->age = getRandomInt(1, 100);
+            record->telephone = newKey;
+            insert(record);
         }
     }
 
@@ -790,6 +849,40 @@ public:
         else
         {
             delKeyInChildTree(rootIndex, delKey);
+        }
+    }
+
+    void initGenerator()
+    {
+        std::random_device device;
+        generator.engine.seed(device());
+    }
+
+    unsigned long long getRandomULL(unsigned long long minValue, unsigned long long maxValue)
+    {
+        if (minValue < maxValue)
+        {
+            std::uniform_int_distribution<unsigned long long> distribution(minValue, maxValue);
+            return distribution(generator.engine);
+        }
+        else
+        {
+            std::cout << "Error random INT: minValue > maxValue !!!\n";
+            exit(1);
+        }
+    }
+
+    unsigned getRandomInt(unsigned minValue, unsigned maxValue)
+    {
+        if (minValue < maxValue)
+        {
+            std::uniform_int_distribution<unsigned> distribution(minValue, maxValue);
+            return distribution(generator.engine);
+        }
+        else
+        {
+            std::cout << "Error random INT: minValue > maxValue !!!\n";
+            exit(1);
         }
     }
 };

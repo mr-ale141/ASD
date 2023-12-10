@@ -20,12 +20,14 @@ int main()
 {
     auto *record = new recordType;
     auto tree = BTree<recordType, decltype(record->telephone)>();
+    int countNodes;
     int i;
     std::cout << "1 - insert\n";
     std::cout << "2 - print records\n";
     std::cout << "3 - find record\n";
     std::cout << "4 - print tree\n";
     std::cout << "5 - del key\n";
+    std::cout << "6 - fill tree\n";
     std::cout << "0 - exit\n";
     std::cout << "cmd-> ";
     std::cin >> i;
@@ -51,8 +53,9 @@ int main()
                 unsigned long long findKey;
                 std::cout << "\nInsert key for found: ";
                 std::cin >> findKey;
+                record = tree.findRecord(findKey, true);
                 std::cout << "___________RECORD__________\n";
-                tree.printRecord(tree.findRecord(findKey));
+                tree.printRecord(record);
                 std::cout << "___________________________\n";
                 break;
             case 4:
@@ -65,6 +68,11 @@ int main()
                 tree.del(delKey);
                 tree.printTree();
                 break;
+            case 6:
+                std::cout << "\nInsert count nodes: ";
+                std::cin >> countNodes;
+                tree.insertRandom(countNodes);
+                break;
             default:
                 break;
         }
@@ -73,6 +81,7 @@ int main()
         std::cout << "3 - find record\n";
         std::cout << "4 - print tree\n";
         std::cout << "5 - del key\n";
+        std::cout << "6 - fill tree\n";
         std::cout << "0 - exit\n";
         std::cout << "cmd-> ";
         std::cin >> i;
