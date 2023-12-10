@@ -8,16 +8,16 @@
 
 typedef struct recordStruct
 {
-    char firstName[32];
-    char secondName[32];
-    int age;
-    unsigned long long telephone;
+    char firstName[32] = {0};
+    char secondName[32] = {0};
+    int age = 0;
+    unsigned long long telephone = 0ULL;
 } recordType;
 
 
 int main()
 {
-    auto *record = new recordType;
+    recordType* record = new recordType;
     auto tree = BTree<recordType, decltype(record->telephone)>();
     int countNodes;
     int i;
@@ -95,6 +95,7 @@ int main()
         std::cout << "cmd-> ";
         std::cin >> i;
     }
+    delete record;
     return 0;
 }
 
