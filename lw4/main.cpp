@@ -70,7 +70,6 @@ int main()
                 std::cout << "\nInsert key for del: ";
                 std::cin >> delKey;
                 tree.del(delKey);
-                tree.printTree();
                 break;
             case 6:
                 std::cout << "\nInsert count nodes: ";
