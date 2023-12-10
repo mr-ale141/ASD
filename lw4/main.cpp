@@ -21,6 +21,7 @@ int main()
     auto tree = BTree<recordType, decltype(record->telephone)>();
     int countNodes;
     int i;
+    bool ok;
     std::cout << "1 - insert\n";
     std::cout << "2 - print records\n";
     std::cout << "3 - find record\n";
@@ -42,8 +43,11 @@ int main()
                 std::cin >> record->age;
                 std::cout << "Insert key: ";
                 std::cin >> record->telephone;
-                tree.insert(record);
-                std::cout << "________INSERT_OK_________\n";
+                ok = tree.insert(record);
+                if (ok)
+                    std::cout << "________INSERT_OK_________\n";
+                else
+                    std::cout << "______KEY_NOT_UNIQUE______\n";
                 break;
             case 2:
                 tree.printRecords();

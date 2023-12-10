@@ -238,7 +238,7 @@ public:
         return findRecordInChildTree(key, currentNode->children[currentNode->size], count, withPrint);
     }
 
-    recordType* findRecord(keyType key, bool withPrint)
+    recordType* findRecord(keyType key, bool withPrint = false)
     {
         recordType* record = nullptr;
         if (!rootIndex)
@@ -504,8 +504,10 @@ public:
         delete newRoot;
     }
 
-    void insert(recordType* record)
+    bool insert(recordType* record)
     {
+        if (findRecord(record->telephone))
+            return false;
         if (rootIndex == 0)
             createRootAndInsert(record);
         else
@@ -567,6 +569,7 @@ public:
                 writeNode(currentNode->current, currentNode);
             }
         }
+        return true;
     }
 
     void insertRandom(int countNodes)
