@@ -1,8 +1,9 @@
 #pragma once
 #include <iostream>
 #include <fstream>
-#include <variant>
-#include <stdio.h>
+#include <string>
+#include <cstring>
+#include <cstdio>
 #include <random>
 
 typedef unsigned long long indexType;
@@ -71,13 +72,14 @@ public:
         if (!file)
         {
             std::cout << "File not found!\n";
-	    std::cout << "Create file '" << fileName << "'!!\n";
-	    std::cout << "Insetr degree B-Tree:";
+            std::cout << "Create file '" << fileName << "'!!\n";
+            std::cout << "Insetr degree B-Tree:";
             std::cin >> N;
             createNewFile(N, fileName);
         }
         else
         {
+            file.seekg(0, this->file.beg);
             file.read((char *)&rootIndex, sizeof(rootIndex));
             file.read((char *)&N, sizeof(N));
             file.read((char *)&sizeBlock, sizeof(sizeBlock));
@@ -104,6 +106,7 @@ public:
         std::size_t remainder = sizeBlock % 16;
         if (remainder)
             sizeBlock += 16 - remainder;
+        file.seekp(0, this->file.beg);
         file.write((char *)&rootIndex, sizeof(rootIndex));
         file.write((char *)&N, sizeof(N));
         file.write((char *)&sizeBlock, sizeof(sizeBlock));
@@ -240,7 +243,8 @@ public:
         recordType* record = nullptr;
         if (!rootIndex)
         {
-            std::cout << "________EMPTY_TREE________\n";
+            if (withPrint)
+                std::cout << "________EMPTY_TREE________\n";
         }
         else
         {
@@ -574,11 +578,14 @@ public:
             while(findRecord(newKey, false))
                 newKey = getRandomULL(0ULL, INT64_MAX);
             recordType* record = new recordType;
-            ulltoa(newKey, record->firstName, 10);
-            ulltoa(newKey, record->secondName, 10);
+            std::string firstName = std::to_string(newKey);
+            std::string secondName = std::to_string(newKey);
+            strcpy(record->firstName, firstName.c_str());
+            strcpy(record->secondName, secondName.c_str());
             record->age = getRandomInt(1, 100);
             record->telephone = newKey;
             insert(record);
+            delete record;
         }
     }
 

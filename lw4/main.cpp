@@ -5,7 +5,6 @@
 */
 
 #include "libs/headers/bTree.hpp"
-//#include <cstring>
 
 typedef struct recordStruct
 {
@@ -44,7 +43,7 @@ int main()
                 std::cout << "Insert key: ";
                 std::cin >> record->telephone;
                 tree.insert(record);
-                tree.printTree();
+                std::cout << "________INSERT_OK_________\n";
                 break;
             case 2:
                 tree.printRecords();
