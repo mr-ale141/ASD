@@ -236,7 +236,8 @@ public:
         if (withPrint)
             printNode(node);
         count += SIZE_TAB;
-        for (int i = 0; i < node->size; i++)
+        int i;
+        for (i = 0; i < node->size; i++)
             if (key < node->keys[i])
             {
                 record = findRecordInChildTree(key, node->children[i], count, withPrint);
@@ -247,7 +248,7 @@ public:
                 record = &(node->data[i]);
                 break;
             }
-        if (!record)
+        if (i == node->size)
             record = findRecordInChildTree(key, node->children[node->size], count, withPrint);
         delete node;
         return record;
