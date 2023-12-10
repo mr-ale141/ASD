@@ -73,7 +73,7 @@ public:
         {
             std::cout << "File not found!\n";
             std::cout << "Create file '" << fileName << "'!!\n";
-            std::cout << "Insetr degree B-Tree:";
+            std::cout << "Insert degree B-Tree:";
             std::cin >> N;
             createNewFile(N, fileName);
         }
@@ -302,6 +302,29 @@ public:
             printRecordsInNode(rootIndex);
             std::cout << "___________________________\n";
         }
+    }
+
+    int countKeysInNode(indexType index)
+    {
+        int countCurrent = 0;
+        if (!index)
+            return countCurrent;
+        Node<recordType, keyType>* node = new Node<recordType, keyType>(N);
+        node = readNode(index);
+        countCurrent += node->size;
+        for (int i = 0; i < node->size; i++)
+            countCurrent += countKeysInNode(node->children[i]);
+        countCurrent += countKeysInNode(node->children[node->size]);
+        delete node;
+        return countCurrent;
+    }
+
+    int countKeys()
+    {
+        if (!rootIndex)
+            return 0;
+        else
+            return countKeysInNode(rootIndex);
     }
 
     void printNode(Node<recordType, keyType>* node)

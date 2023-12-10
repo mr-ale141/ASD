@@ -28,6 +28,7 @@ int main()
     std::cout << "4 - print tree\n";
     std::cout << "5 - del key\n";
     std::cout << "6 - fill tree\n";
+    std::cout << "7 - print count keys\n";
     std::cout << "0 - exit\n";
     std::cout << "cmd-> ";
     std::cin >> i;
@@ -76,6 +77,11 @@ int main()
                 std::cin >> countNodes;
                 tree.insertRandom(countNodes);
                 break;
+            case 7:
+                std::cout << "___________________________\n";
+                std::cout << "Count keys: " << tree.countKeys() << std::endl;
+                std::cout << "___________________________\n";
+                break;
             default:
                 break;
         }
@@ -85,6 +91,7 @@ int main()
         std::cout << "4 - print tree\n";
         std::cout << "5 - del key\n";
         std::cout << "6 - fill tree\n";
+        std::cout << "7 - print count keys\n";
         std::cout << "0 - exit\n";
         std::cout << "cmd-> ";
         std::cin >> i;
