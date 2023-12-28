@@ -1,5 +1,4 @@
 #pragma once
-#include <memory>
 
 typedef unsigned long long indexType;
 

@@ -6,32 +6,33 @@
 
 #include "libs/headers/bTree.hpp"
 
-typedef struct recordStruct
+void printMenu()
 {
-    char firstName[32] = {0};
-    char secondName[32] = {0};
-    int age = 0;
-    unsigned long long telephone = 0ULL;
-} recordType;
-
-
-int main()
-{
-    recordType* record = new recordType;
-    auto tree = BTree<recordType, decltype(record->telephone)>();
-    int countNodes;
-    int i;
-    bool ok;
-    unsigned long long findKey;
     std::cout << "1 - insert\n";
+    std::cout << "10 - insert tree2\n";
     std::cout << "2 - print records\n";
+    std::cout << "20 - print records tree2\n";
     std::cout << "3 - find record\n";
     std::cout << "4 - print tree\n";
+    std::cout << "40 - print tree2\n";
     std::cout << "5 - del key\n";
     std::cout << "6 - fill tree\n";
     std::cout << "7 - print count keys\n";
     std::cout << "0 - exit\n";
     std::cout << "cmd-> ";
+}
+
+int main()
+{
+    auto* record = new recordType;
+    auto* record2 = new recordType2;
+    auto tree = BTree<recordType, decltype(record->telephone)>();
+    auto tree2 = BTree<recordType2, decltype(record2->telephone)>();
+    int countNodes;
+    int i;
+    bool ok;
+    unsigned long long findKey;
+    printMenu();
     std::cin >> i;
     while (i)
     {
@@ -43,7 +44,7 @@ int main()
                 std::cin >> record->secondName;
                 std::cout << "Insert age: ";
                 std::cin >> record->age;
-                std::cout << "Insert key: ";
+                std::cout << "Insert telephone: ";
                 std::cin >> record->telephone;
                 ok = tree.insert(record);
                 if (ok)
@@ -51,8 +52,24 @@ int main()
                 else
                     std::cout << "______KEY_NOT_UNIQUE______\n";
                 break;
+            case 10:
+                std::cout << "Insert Name: ";
+                std::cin >> record2->name;
+                std::cout << "Insert birth year: ";
+                std::cin >> record2->birthYear;
+                std::cout << "Insert telephone: ";
+                std::cin >> record2->telephone;
+                ok = tree2.insert(record2);
+                if (ok)
+                    std::cout << "________INSERT_OK_________\n";
+                else
+                    std::cout << "______KEY_NOT_UNIQUE______\n";
+                break;
             case 2:
                 tree.printRecords();
+                break;
+            case 20:
+                tree2.printRecords();
                 break;
             case 3:
                 std::cout << "\nInsert key for found: ";
@@ -64,6 +81,9 @@ int main()
                 break;
             case 4:
                 tree.printTree();
+                break;
+            case 40:
+                tree2.printTree();
                 break;
             case 5:
                 unsigned long long delKey;
@@ -84,15 +104,7 @@ int main()
             default:
                 break;
         }
-        std::cout << "1 - insert\n";
-        std::cout << "2 - print records\n";
-        std::cout << "3 - find record\n";
-        std::cout << "4 - print tree\n";
-        std::cout << "5 - del key\n";
-        std::cout << "6 - fill tree\n";
-        std::cout << "7 - print count keys\n";
-        std::cout << "0 - exit\n";
-        std::cout << "cmd-> ";
+        printMenu();
         std::cin >> i;
     }
     delete record;
