@@ -12,8 +12,8 @@ class BTree
         std::mt19937 engine;
     };
     PRNG generator;
-    FileHandler<recordType, keyType> fileHandler;
-    PrintHandler<recordType, keyType> printHandler;
+    FileHandler<recordType, keyType>* fileHandler;
+    PrintHandler<recordType, keyType>* printHandler;
 
 public:
     BTree();
@@ -35,39 +35,39 @@ public:
     void delKeyInChildTree(indexType index, keyType delKey);
     void fixRules(indexType index);
     void del(keyType delKey);
-    void printTree() {printHandler.printTree();}
-    void printRecords() {printHandler.printRecords();}
-    int countKeys() {return printHandler.countKeys();}
-    void printRecord(recordType* record) {printHandler.printRecord(record);}
+    void printTree() {printHandler->printTree();}
+    void printRecords() {printHandler->printRecords();}
+    int countKeys() {return printHandler->countKeys();}
+    void printRecord(recordType* record) {printHandler->printRecord(record);}
 };
 
 template<typename recordType, typename keyType>
 void BTree<recordType, keyType>::del(keyType delKey) {
     Node<recordType, keyType>* currentNode;
-    currentNode = fileHandler.readNode(fileHandler.rootIndex);
+    currentNode = fileHandler->readNode(fileHandler->rootIndex);
     if (currentNode->isLeaf)
     {
-        Node<recordType, keyType>* node = findNodeInChildTree(delKey, fileHandler.rootIndex);
+        Node<recordType, keyType>* node = findNodeInChildTree(delKey, fileHandler->rootIndex);
         if (!node)
             std::cout << "Key not found!!!!\n";
         else if (!delInLeaf(currentNode->current, delKey))
         {
-            fileHandler.file.close();
-            fileHandler.createNewFile(N, fileHandler.fileName);
+            fileHandler->file.close();
+            fileHandler->createNewFile(N, fileHandler->fileName);
         }
         delete node;
     }
     else
     {
-        delKeyInChildTree(fileHandler.rootIndex, delKey);
+        delKeyInChildTree(fileHandler->rootIndex, delKey);
     }
     delete currentNode;
 }
 
 template<typename recordType, typename keyType>
 void BTree<recordType, keyType>::fixRules(indexType index) {
-    Node<recordType, keyType>* node = fileHandler.readNode(index);
-    Node<recordType, keyType>* parentNode = fileHandler.readNode(node->parent);
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
+    Node<recordType, keyType>* parentNode = fileHandler->readNode(node->parent);
     int i;
     for (i = 0; i < parentNode->size; i++)
     {
@@ -79,11 +79,11 @@ void BTree<recordType, keyType>::fixRules(indexType index) {
     Node<recordType, keyType>* brotherRight = nullptr;
     if (indexParentKey == 0 || indexParentKey < parentNode->size)
     {
-        brotherRight = fileHandler.readNode(parentNode->children[i + 1]);
+        brotherRight = fileHandler->readNode(parentNode->children[i + 1]);
     }
     else
     {
-        brotherLeft = fileHandler.readNode(parentNode->children[i - 1]);
+        brotherLeft = fileHandler->readNode(parentNode->children[i - 1]);
         indexParentKey--;
     }
     if (brotherRight && brotherRight->size >= N)
@@ -96,8 +96,8 @@ void BTree<recordType, keyType>::fixRules(indexType index) {
         node->data[node->size - 1] = recordParent;
         parentNode->keys[indexParentKey] = recordFromBrother.telephone;
         parentNode->data[indexParentKey] = recordFromBrother;
-        fileHandler.writeNode(node->current, node);
-        fileHandler.writeNode(parentNode->current, parentNode);
+        fileHandler->writeNode(node->current, node);
+        fileHandler->writeNode(parentNode->current, parentNode);
         delete brotherRight;
     }
     else if (brotherLeft && brotherLeft->size >= N)
@@ -115,8 +115,8 @@ void BTree<recordType, keyType>::fixRules(indexType index) {
         node->data[0] = recordParent;
         parentNode->keys[indexParentKey] = recordFromBrother.telephone;
         parentNode->data[indexParentKey] = recordFromBrother;
-        fileHandler.writeNode(node->current, node);
-        fileHandler.writeNode(parentNode->current, parentNode);
+        fileHandler->writeNode(node->current, node);
+        fileHandler->writeNode(parentNode->current, parentNode);
         delete brotherLeft;
     }
     else
@@ -143,13 +143,13 @@ void BTree<recordType, keyType>::fixRules(indexType index) {
             {
                 for (int j = 0; j <= brotherRight->size; j++)
                 {
-                    Node<recordType, keyType>* updateChildNode = fileHandler.readNode(brotherRight->children[j]);
+                    Node<recordType, keyType>* updateChildNode = fileHandler->readNode(brotherRight->children[j]);
                     updateChildNode->parent = brotherRight->current;
-                    fileHandler.writeNode(updateChildNode->current, updateChildNode);
+                    fileHandler->writeNode(updateChildNode->current, updateChildNode);
                     delete updateChildNode;
                 }
             }
-            fileHandler.writeNode(brotherRight->current, brotherRight);
+            fileHandler->writeNode(brotherRight->current, brotherRight);
             indexNodeAfterSplit = brotherRight->current;
 
             for (i = indexParentKey; i < parentNode->size; i++)
@@ -160,7 +160,7 @@ void BTree<recordType, keyType>::fixRules(indexType index) {
             }
             parentNode->children[i] = parentNode->children[i + 1];
             parentNode->size--;
-            fileHandler.writeNode(parentNode->current, parentNode);
+            fileHandler->writeNode(parentNode->current, parentNode);
 
             delete brotherRight;
         }
@@ -185,13 +185,13 @@ void BTree<recordType, keyType>::fixRules(indexType index) {
             {
                 for (int j = 0; j <= brotherLeft->size; j++)
                 {
-                    Node<recordType, keyType>* updateChildNode = fileHandler.readNode(brotherLeft->children[j]);
+                    Node<recordType, keyType>* updateChildNode = fileHandler->readNode(brotherLeft->children[j]);
                     updateChildNode->parent = brotherLeft->current;
-                    fileHandler.writeNode(updateChildNode->current, updateChildNode);
+                    fileHandler->writeNode(updateChildNode->current, updateChildNode);
                     delete updateChildNode;
                 }
             }
-            fileHandler.writeNode(node->current, node);
+            fileHandler->writeNode(node->current, node);
             indexNodeAfterSplit = node->current;
 
             for (i = indexParentKey; i < parentNode->size; i++)
@@ -202,17 +202,17 @@ void BTree<recordType, keyType>::fixRules(indexType index) {
             }
             parentNode->children[i] = parentNode->children[i + 1];
             parentNode->size--;
-            fileHandler.writeNode(parentNode->current, parentNode);
+            fileHandler->writeNode(parentNode->current, parentNode);
 
             delete brotherLeft;
         }
         if (parentNode->size < N - 1)
         {
-            if (parentNode->current == fileHandler.rootIndex && parentNode->size == 0)
+            if (parentNode->current == fileHandler->rootIndex && parentNode->size == 0)
             {
-                fileHandler.setNewRootIndex(indexNodeAfterSplit);
+                fileHandler->setNewRootIndex(indexNodeAfterSplit);
             }
-            else if (parentNode->current != fileHandler.rootIndex)
+            else if (parentNode->current != fileHandler->rootIndex)
             {
                 fixRules(parentNode->current);
             }
@@ -243,7 +243,7 @@ void BTree<recordType, keyType>::delKeyInChildTree(indexType index, keyType delK
                 recordType record = *getRecordWithMaxKey(node->children[i]);
                 node->keys[i] = record.telephone;
                 node->data[i] = record;
-                fileHandler.writeNode(node->current, node);
+                fileHandler->writeNode(node->current, node);
                 delKeyInChildTree(node->children[i], record.telephone);
                 break;
             }
@@ -254,7 +254,7 @@ void BTree<recordType, keyType>::delKeyInChildTree(indexType index, keyType delK
 
 template<typename recordType, typename keyType>
 int BTree<recordType, keyType>::delInLeaf(indexType index, keyType delKey) {
-    Node<recordType, keyType>* node = fileHandler.readNode(index);
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
     int i;
     auto *_keys = new keyType[2 * N - 1];
     auto *_children = new indexType[2 * N];
@@ -288,7 +288,7 @@ int BTree<recordType, keyType>::delInLeaf(indexType index, keyType delKey) {
     node->keys = _keys;
     node->children = _children;
     node->data = _data;
-    fileHandler.writeNode(node->current, node);
+    fileHandler->writeNode(node->current, node);
     int size = node->size;
     delete node;
     return size;
@@ -296,13 +296,13 @@ int BTree<recordType, keyType>::delInLeaf(indexType index, keyType delKey) {
 
 template<typename recordType, typename keyType>
 recordType *BTree<recordType, keyType>::getRecordWithMinKey(indexType index) {
-    Node<recordType, keyType>* node = fileHandler.readNode(index);
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
     indexType next;
     while(!node->isLeaf)
     {
         next = node->children[0];
         delete node;
-        node = fileHandler.readNode(next);
+        node = fileHandler->readNode(next);
     }
     recordType* record = &(node->data[0]);
     delete node;
@@ -311,13 +311,13 @@ recordType *BTree<recordType, keyType>::getRecordWithMinKey(indexType index) {
 
 template<typename recordType, typename keyType>
 recordType *BTree<recordType, keyType>::getRecordWithMaxKey(indexType index) {
-    Node<recordType, keyType>* node = fileHandler.readNode(index);
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
     indexType next;
     while(!node->isLeaf)
     {
         next = node->children[node->size];
         delete node;
-        node = fileHandler.readNode(next);
+        node = fileHandler->readNode(next);
     }
     recordType* record = &(node->data[node->size - 1]);
     delete node;
@@ -348,11 +348,11 @@ template<typename recordType, typename keyType>
 bool BTree<recordType, keyType>::insert(recordType *record) {
     if (findRecord(record->telephone))
         return false;
-    if (fileHandler.rootIndex == 0)
+    if (fileHandler->rootIndex == 0)
         createRootAndInsert(record);
     else
     {
-        Node<recordType, keyType>* node = insertInChildTree(fileHandler.rootIndex, record);
+        Node<recordType, keyType>* node = insertInChildTree(fileHandler->rootIndex, record);
         if (node->size == (2 * N - 1))
         {
             int i;
@@ -365,8 +365,8 @@ bool BTree<recordType, keyType>::insert(recordType *record) {
                 _children[i] = 0;
             auto* newNode = new Node<recordType, keyType>(N);
             newNode->isLeaf = node->isLeaf;
-            newNode->parent = fileHandler.writeIndex + 1;
-            newNode->current = fileHandler.writeIndex;
+            newNode->parent = fileHandler->writeIndex + 1;
+            newNode->current = fileHandler->writeIndex;
             newNode->size = N - 1;
             for (i = 0; i < (N - 1); i++)
             {
@@ -379,13 +379,13 @@ bool BTree<recordType, keyType>::insert(recordType *record) {
             {
                 for (int j = 0; j <= newNode->size; j++)
                 {
-                    Node<recordType, keyType>* updateChildNode = fileHandler.readNode(newNode->children[j]);
+                    Node<recordType, keyType>* updateChildNode = fileHandler->readNode(newNode->children[j]);
                     updateChildNode->parent = newNode->current;
-                    fileHandler.writeNode(updateChildNode->current, updateChildNode);
+                    fileHandler->writeNode(updateChildNode->current, updateChildNode);
                     delete updateChildNode;
                 }
             }
-            fileHandler.writeNode(newNode->current, newNode);
+            fileHandler->writeNode(newNode->current, newNode);
             recordType* movedDataUp = &node->data[i];
             createRootAndInsert(movedDataUp, newNode->current, node->current);
             delete newNode;
@@ -404,8 +404,8 @@ bool BTree<recordType, keyType>::insert(recordType *record) {
             node->children = _children;
             node->data = _data;
             node->size = N - 1;
-            node->parent = fileHandler.rootIndex;
-            fileHandler.writeNode(node->current, node);
+            node->parent = fileHandler->rootIndex;
+            fileHandler->writeNode(node->current, node);
         }
         delete node;
     }
@@ -415,20 +415,20 @@ bool BTree<recordType, keyType>::insert(recordType *record) {
 template<typename recordType, typename keyType>
 void BTree<recordType, keyType>::createRootAndInsert(recordType *record, indexType childLeft, indexType childRight) {
     bool isLeaf;
-    if (!fileHandler.rootIndex)
+    if (!fileHandler->rootIndex)
         isLeaf = true;
     else
         isLeaf = false;
-    fileHandler.setNewRootIndex(fileHandler.writeIndex);
+    fileHandler->setNewRootIndex(fileHandler->writeIndex);
     auto* newRoot = new Node<recordType, keyType>(N);
     newRoot->isLeaf = isLeaf;
     newRoot->size = 1;
-    newRoot->current = fileHandler.rootIndex;
+    newRoot->current = fileHandler->rootIndex;
     newRoot->keys[0] = record->telephone;
     newRoot->data[0] = *record;
     newRoot->children[0] = childLeft;
     newRoot->children[1] = childRight;
-    fileHandler.writeNode(newRoot->current, newRoot);
+    fileHandler->writeNode(newRoot->current, newRoot);
     delete newRoot;
 }
 
@@ -436,7 +436,7 @@ template<typename recordType, typename keyType>
 Node<recordType, keyType> *BTree<recordType, keyType>::insertInChildTree(indexType index, recordType *record) {
     if (!index)
         return nullptr;
-    Node<recordType, keyType>* node = fileHandler.readNode(index);
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
     if (!node->isLeaf)
     {
         Node<recordType, keyType>* childNode;
@@ -467,7 +467,7 @@ Node<recordType, keyType> *BTree<recordType, keyType>::insertInChildTree(indexTy
             auto* newNode = new Node<recordType, keyType>(N);
             newNode->isLeaf = childNode->isLeaf;
             newNode->parent = node->current;
-            newNode->current = fileHandler.writeIndex;
+            newNode->current = fileHandler->writeIndex;
             newNode->size = N - 1;
             for (i = 0; i < (N - 1); i++)
             {
@@ -482,13 +482,13 @@ Node<recordType, keyType> *BTree<recordType, keyType>::insertInChildTree(indexTy
             {
                 for (int j = 0; j <= newNode->size; j++)
                 {
-                    Node<recordType, keyType>* updateChildNode = fileHandler.readNode(newNode->children[i]);
+                    Node<recordType, keyType>* updateChildNode = fileHandler->readNode(newNode->children[i]);
                     updateChildNode->parent = newNode->current;
-                    fileHandler.writeNode(updateChildNode->current, updateChildNode);
+                    fileHandler->writeNode(updateChildNode->current, updateChildNode);
                     delete updateChildNode;
                 }
             }
-            fileHandler.writeNode(newNode->current, newNode);
+            fileHandler->writeNode(newNode->current, newNode);
             delete newNode;
             int j = 0;
             for (i++; j < (N - 1); i++, j++)
@@ -505,7 +505,7 @@ Node<recordType, keyType> *BTree<recordType, keyType>::insertInChildTree(indexTy
             childNode->children = _children;
             childNode->data = _data;
             childNode->size = N - 1;
-            fileHandler.writeNode(childNode->current, childNode);
+            fileHandler->writeNode(childNode->current, childNode);
         }
         delete childNode;
     }
@@ -513,7 +513,7 @@ Node<recordType, keyType> *BTree<recordType, keyType>::insertInChildTree(indexTy
     {
         insertRecord(node, record);
     }
-    fileHandler.writeNode(node->current, node);
+    fileHandler->writeNode(node->current, node);
     return node;
 }
 
@@ -560,7 +560,7 @@ void BTree<recordType, keyType>::insertRecord(Node<recordType, keyType> *node, r
 template<typename recordType, typename keyType>
 recordType *BTree<recordType, keyType>::findRecord(keyType key, bool withPrint) {
     recordType* record = nullptr;
-    if (!fileHandler.rootIndex)
+    if (!fileHandler->rootIndex)
     {
         if (withPrint)
             std::cout << "________EMPTY_TREE________\n";
@@ -570,7 +570,7 @@ recordType *BTree<recordType, keyType>::findRecord(keyType key, bool withPrint) 
         int count = 0;
         if (withPrint)
             std::cout << "_________FIND_HISTORY______\n";
-        record = findRecordInChildTree(key, fileHandler.rootIndex, count, withPrint);
+        record = findRecordInChildTree(key, fileHandler->rootIndex, count, withPrint);
         if (withPrint)
             std::cout << "___________________________\n";
     }
@@ -583,11 +583,11 @@ recordType *BTree<recordType, keyType>::findRecordInChildTree(keyType key, index
         return nullptr;
     else
     if (withPrint)
-        printHandler.printTab(count);
-    recordType* record = new recordType;
-    Node<recordType, keyType>* node = fileHandler.readNode(index);
+        printHandler->printTab(count);
+    recordType* record = nullptr;
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
     if (withPrint)
-        printHandler.printNode(node);
+        printHandler->printNode(node);
     count += SIZE_TAB;
     int i;
     for (i = 0; i < node->size; i++)
@@ -598,7 +598,7 @@ recordType *BTree<recordType, keyType>::findRecordInChildTree(keyType key, index
         }
         else if (key == node->keys[i])
         {
-            *record = node->data[i];
+            record = &(node->data[i]);
             break;
         }
     if (i == node->size)
@@ -611,7 +611,7 @@ template<typename recordType, typename keyType>
 Node<recordType, keyType> *BTree<recordType, keyType>::findNodeInChildTree(keyType key, indexType index) {
     if (!index)
         return nullptr;
-    Node<recordType, keyType>* node = fileHandler.readNode(index);
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
     indexType next;
     for (int i = 0; i < node->size; i++)
         if (key < node->keys[i])
@@ -666,7 +666,9 @@ BTree<recordType, keyType>::~BTree() {}
 
 template <typename recordType, typename keyType>
 BTree<recordType, keyType>::BTree()
-    : fileHandler{FileHandler<recordType, keyType>()}, printHandler{PrintHandler<recordType, keyType>(fileHandler)}
 {
+    fileHandler = new FileHandler<recordType, keyType>();
+    N = fileHandler->N;
+    printHandler = new PrintHandler<recordType, keyType>(*fileHandler);
     initGenerator();
 }
