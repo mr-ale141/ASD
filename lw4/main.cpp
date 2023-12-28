@@ -22,6 +22,7 @@ int main()
     int countNodes;
     int i;
     bool ok;
+    unsigned long long findKey;
     std::cout << "1 - insert\n";
     std::cout << "2 - print records\n";
     std::cout << "3 - find record\n";
@@ -54,7 +55,6 @@ int main()
                 tree.printRecords();
                 break;
             case 3:
-                unsigned long long findKey;
                 std::cout << "\nInsert key for found: ";
                 std::cin >> findKey;
                 record = tree.findRecord(findKey, true);
