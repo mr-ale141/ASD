@@ -1,7 +1,7 @@
 #pragma once
 #include "fileHandler.h"
 #include "printHandler.h"
-#include "node.h"
+#include "node/node.h"
 
 template <typename recordType, typename keyType>
 class BTree
@@ -35,11 +35,35 @@ public:
     void delKeyInChildTree(indexType index, keyType delKey);
     void fixRules(indexType index);
     void del(keyType delKey);
+    int countKeysInNode(indexType index);
+    int countKeys();
     void printTree() {printHandler->printTree();}
     void printRecords() {printHandler->printRecords();}
-    int countKeys() {return printHandler->countKeys();}
     void printRecord(recordType* record) {printHandler->printRecord(record);}
+
 };
+
+template<typename recordType, typename keyType>
+int BTree<recordType, keyType>::countKeys() {
+    if (!fileHandler->rootIndex)
+        return 0;
+    else
+        return countKeysInNode(fileHandler->rootIndex);
+}
+
+template<typename recordType, typename keyType>
+int BTree<recordType, keyType>::countKeysInNode(indexType index) {
+    int countCurrent = 0;
+    if (!index)
+        return countCurrent;
+    Node<recordType, keyType>* node = fileHandler->readNode(index);
+    countCurrent += node->size;
+    for (int i = 0; i < node->size; i++)
+        countCurrent += countKeysInNode(node->children[i]);
+    countCurrent += countKeysInNode(node->children[node->size]);
+    delete node;
+    return countCurrent;
+}
 
 template<typename recordType, typename keyType>
 void BTree<recordType, keyType>::del(keyType delKey) {

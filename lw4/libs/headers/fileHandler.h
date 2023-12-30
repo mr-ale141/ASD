@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <random>
-#include "node.h"
+#include "node/node.h"
 
 template <typename recordType, typename keyType>
 class FileHandler
