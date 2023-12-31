@@ -53,7 +53,7 @@ void PrintHandler<recordType, linkType>::printTree() {
 
 template <>
 void PrintHandler<RecordPhone, linkFS>::printTree() {
-    if (!store.rootIndex)
+    if (!store.root)
     {
         std::cout << "________EMPTY_TREE________\n";
         return;
@@ -62,7 +62,7 @@ void PrintHandler<RecordPhone, linkFS>::printTree() {
     {
         int count = 0;
         std::cout << "___________B-TREE_________\n";
-        printNodes(store.rootIndex, count);
+        printNodes(store.root, count);
         std::cout << "__________________________\n";
     }
 }
