@@ -1,17 +1,11 @@
 #pragma once
-#include "fileHandler.h"
+#include "store.h"
 #include "printHandler.h"
-#include "node/node.h"
 
-template <typename recordType, typename keyType>
+template <typename recordType, typename linkType>
 class BTree
 {
     int N;
-    struct PRNG
-    {
-        std::mt19937 engine;
-    };
-    PRNG generator;
     FileHandler<recordType, keyType>* fileHandler;
     PrintHandler<recordType, keyType>* printHandler;
 
@@ -25,10 +19,6 @@ public:
     Node<recordType, keyType>* insertInChildTree(indexType index, recordType* record);
     void createRootAndInsert(recordType* record, indexType childLeft = 0, indexType childRight = 0);
     bool insert(recordType* record);
-    void initGenerator();
-    unsigned long long getRandomULL(unsigned long long minValue, unsigned long long maxValue);
-    unsigned getRandomInt(unsigned minValue, unsigned maxValue);
-    void insertRandom(int countNodes);
     recordType* getRecordWithMaxKey(indexType index);
     recordType* getRecordWithMinKey(indexType index);
     int delInLeaf(indexType index, keyType delKey);
@@ -349,26 +339,6 @@ recordType *BTree<recordType, keyType>::getRecordWithMaxKey(indexType index) {
 }
 
 template<typename recordType, typename keyType>
-void BTree<recordType, keyType>::insertRandom(int countNodes) {
-    while (countNodes != 0)
-    {
-        countNodes--;
-        unsigned long long newKey = getRandomULL(89010000000, 89999999999);
-        while(findRecord(newKey))
-            newKey = getRandomULL(89010000000, 89999999999);
-        recordType* record = new recordType{};
-        std::string firstName = std::to_string(newKey);
-        std::string secondName = std::to_string(newKey);
-        strcpy(record->firstName, firstName.c_str());
-        strcpy(record->secondName, secondName.c_str());
-        record->age = getRandomInt(1, 100);
-        record->telephone = newKey;
-        insert(record);
-        delete record;
-    }
-}
-
-template<typename recordType, typename keyType>
 bool BTree<recordType, keyType>::insert(recordType *record) {
     if (findRecord(record->telephone))
         return false;
@@ -649,40 +619,6 @@ Node<recordType, keyType> *BTree<recordType, keyType>::findNodeInChildTree(keyTy
     next = node->children[node->size];
     delete node;
     return findNodeInChildTree(key, next);
-}
-
-template<typename recordType, typename keyType>
-unsigned BTree<recordType, keyType>::getRandomInt(unsigned int minValue, unsigned int maxValue) {
-    if (minValue < maxValue)
-    {
-        std::uniform_int_distribution<unsigned> distribution(minValue, maxValue);
-        return distribution(generator.engine);
-    }
-    else
-    {
-        std::cout << "Error random INT: minValue > maxValue !!!\n";
-        exit(1);
-    }
-}
-
-template<typename recordType, typename keyType>
-unsigned long long BTree<recordType, keyType>::getRandomULL(unsigned long long int minValue, unsigned long long int maxValue) {
-    if (minValue < maxValue)
-    {
-        std::uniform_int_distribution<unsigned long long> distribution(minValue, maxValue);
-        return distribution(generator.engine);
-    }
-    else
-    {
-        std::cout << "Error random INT: minValue > maxValue !!!\n";
-        exit(1);
-    }
-}
-
-template<typename recordType, typename keyType>
-void BTree<recordType, keyType>::initGenerator() {
-    std::random_device device;
-    generator.engine.seed(device());
 }
 
 template<typename recordType, typename keyType>

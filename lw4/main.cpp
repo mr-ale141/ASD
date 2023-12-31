@@ -4,7 +4,65 @@
 храниться и обрабатываться в файле с прямым доступом (12).
 */
 
+#include <random>
 #include "libs/headers/bTree.hpp"
+
+struct PRNG
+{
+    std::mt19937 engine;
+};
+PRNG generator;
+
+unsigned getRandomInt(unsigned int minValue, unsigned int maxValue) {
+    if (minValue < maxValue)
+    {
+        std::uniform_int_distribution<unsigned> distribution(minValue, maxValue);
+        return distribution(generator.engine);
+    }
+    else
+    {
+        std::cout << "Error random INT: minValue > maxValue !!!\n";
+        exit(1);
+    }
+}
+
+unsigned long long getRandomULL(unsigned long long int minValue, unsigned long long int maxValue) {
+    if (minValue < maxValue)
+    {
+        std::uniform_int_distribution<unsigned long long> distribution(minValue, maxValue);
+        return distribution(generator.engine);
+    }
+    else
+    {
+        std::cout << "Error random INT: minValue > maxValue !!!\n";
+        exit(1);
+    }
+}
+
+void initGenerator() {
+    std::random_device device;
+    generator.engine.seed(device());
+}
+
+void insertRandom(int countNodes) {
+    while (countNodes != 0)
+    {
+        countNodes--;
+        unsigned long long newKey = getRandomULL(89010000000, 89999999999);
+        while(findRecord(newKey))
+            newKey = getRandomULL(89010000000, 89999999999);
+        recordType* record = new recordType{};
+        std::string firstName = std::to_string(newKey);
+        std::string secondName = std::to_string(newKey);
+        strcpy(record->firstName, firstName.c_str());
+        strcpy(record->secondName, secondName.c_str());
+        record->age = getRandomInt(1, 100);
+        record->telephone = newKey;
+        insert(record);
+        delete record;
+    }
+}
+
 
 void printMenu()
 {
