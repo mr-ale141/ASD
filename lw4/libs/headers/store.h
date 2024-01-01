@@ -3,10 +3,19 @@
 #include <iostream>
 #include "node.h"
 
+typedef std::shared_ptr<void> linkRAM;
+
 template<typename recordType, typename linkType = linkRAM>
-class Store {
+class Store
+{
 public:
-    Store() : root(nullptr) {}
+    int N;
+    std::shared_ptr<Node<recordType, linkType>> root;
+    Store() : root(nullptr)
+    {
+        std::cout << "Insert degree B-Tree:";
+        std::cin >> N;
+    }
     void writeNode(linkType& link, Node<recordType, linkType>& node)
     {
         link = std::make_shared<Node<recordType, linkType>>(node.N);
@@ -16,12 +25,11 @@ public:
     {
         return link;
     }
-private:
-    std::shared_ptr<Node<recordType, linkType>> root;
 };
 
 template<typename recordType>
-class Store<recordType, linkFS> {
+class Store<recordType, linkFS>
+{
 public:
     int N;
     linkFS root;
@@ -71,7 +79,7 @@ public:
             file.write((char *)&node.children[i], sizeof(node.children[i]));
 
         for (int i = 0; i < (2 * node.N - 1); i++)
-            file.write((char *)&node.data[i].record, sizeof(node.data[i].record));
+            file.write((char *)&node.data[i], sizeof(node.data[i]));
 
         if (index == writeIndex)
             incWriteIndex();
@@ -82,26 +90,27 @@ public:
 
         file.seekg(index * sizeBlock, this->file.beg);
 
-        file.read((char *)&node.isLeaf, sizeof(node.isLeaf));
+        file.read((char *)&node->isLeaf, sizeof(node->isLeaf));
 
-        file.read((char *)&node.N, sizeof(node.N));
-        file.read((char *)&node.size, sizeof(node.size));
+        file.read((char *)&node->N, sizeof(node->N));
+        file.read((char *)&node->size, sizeof(node->size));
 
-        file.read((char *)&node.parent, sizeof(node.parent));
-        file.read((char *)&node.current, sizeof(node.current));
+        file.read((char *)&node->parent, sizeof(node->parent));
+        file.read((char *)&node->current, sizeof(node->current));
 
-        for (int i = 0; i < (2 * node.N - 1); i++)
-            file.read((char *)&node.keys[i], sizeof(node.keys[i]));
+        for (int i = 0; i < (2 * node->N - 1); i++)
+            file.read((char *)&node->keys[i], sizeof(node->keys[i]));
 
-        for (int i = 0; i <(2 * node.N); i++)
-            file.read((char *)&node.children[i], sizeof(node.children[i]));
+        for (int i = 0; i <(2 * node->N); i++)
+            file.read((char *)&node->children[i], sizeof(node->children[i]));
 
-        for (int i = 0; i < (2 * node.N - 1); i++)
-            file.read((char *)&node.data[i].record, sizeof(node.data[i].record));
+        for (int i = 0; i < (2 * node->N - 1); i++)
+            file.read((char *)&node->data[i], sizeof(node->data[i]));
 
         return node;
     }
-    void createNewFile() {
+    void createNewFile()
+    {
         file.open(fileName, std::fstream::binary | std::fstream::trunc | std::fstream::out);
         file.close();
         file.open(fileName, std::fstream::binary | std::fstream::in | std::fstream::out);
@@ -123,12 +132,14 @@ public:
         file.write((char *)&sizeBlock, sizeof(sizeBlock));
         file.write((char *)&writeIndex, sizeof(writeIndex));
     }
-    void setNewRootIndex(linkFS& newIndex) {
+    void setNewRootIndex(linkFS& newIndex)
+    {
         root = newIndex;
         file.seekp(0, this->file.beg);
         file.write((char *)&root, sizeof(root));
     }
-    void incWriteIndex() {
+    void incWriteIndex()
+    {
         writeIndex++;
         file.seekp(
                 sizeof(root) +

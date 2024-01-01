@@ -3,7 +3,6 @@
 #include "record.h"
 
 typedef unsigned long long linkFS;
-typedef std::shared_ptr<void> linkRAM;
 
 template <typename recordType, typename linkType>
 class Node

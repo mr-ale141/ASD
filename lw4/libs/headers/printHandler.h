@@ -23,36 +23,9 @@ public:
     void printTree();
 };
 
-template <>
-PrintHandler<RecordPhone, linkFS>::PrintHandler(Store<RecordPhone, linkFS>& refStore) : store(refStore) {}
-
-template <>
-PrintHandler<RecordBirth, linkFS>::PrintHandler(Store<RecordBirth, linkFS>& refStore) : store(refStore) {}
-
-template <>
-PrintHandler<RecordPhone, linkRAM>::PrintHandler(Store<RecordPhone, linkRAM>& refStore) : store(refStore) {}
-
-template <>
-PrintHandler<RecordBirth, linkRAM>::PrintHandler(Store<RecordBirth, linkRAM>& refStore) : store(refStore) {}
-
 template <class recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printTree() {
-    if (!store.readNode)
-    {
-        std::cout << "________EMPTY_TREE________\n";
-        return;
-    }
-    else
-    {
-        int count = 0;
-        std::cout << "___________B-TREE_________\n";
-        printNodes(store.rootIndex, count);
-        std::cout << "__________________________\n";
-    }
-}
-
-template <>
-void PrintHandler<RecordPhone, linkFS>::printTree() {
+void PrintHandler<recordType, linkType>::printTree()
+{
     if (!store.root)
     {
         std::cout << "________EMPTY_TREE________\n";
@@ -68,22 +41,24 @@ void PrintHandler<RecordPhone, linkFS>::printTree() {
 }
 
 template <typename recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printNodes(linkType& link, int count) {
-    Node<recordType, linkType> node = store.readNode(link);
-    printNode(node);
+void PrintHandler<recordType, linkType>::printNodes(linkType& link, int count)
+{
+    auto node = store.readNode(link);
+    printNode(*node);
     count += SIZE_TAB;
-    for (int i = 0; i <= node.size; i++)
+    for (int i = 0; i <= node->size; i++)
     {
-        if (node.children[i])
+        if (node->children[i])
         {
             printTab(count);
-            printNodes(node.children[i], count);
+            printNodes(node->children[i], count);
         }
     }
 }
 
 template <typename recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printTab(int count) {
+void PrintHandler<recordType, linkType>::printTab(int count)
+{
     if (count)
         for (int j = 0; j < count; j++)
         {
@@ -95,7 +70,8 @@ void PrintHandler<recordType, linkType>::printTab(int count) {
 }
 
 template <typename recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printNode(Node<recordType, linkType>& node) {
+void PrintHandler<recordType, linkType>::printNode(Node<recordType, linkType>& node)
+{
     std::cout << "{ ";
     for (int i = 0; i < (2 * store.N - 2); i++)
     {
@@ -107,8 +83,9 @@ void PrintHandler<recordType, linkType>::printNode(Node<recordType, linkType>& n
 }
 
 template <typename recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printRecords() {
-    if (!store.rootIndex)
+void PrintHandler<recordType, linkType>::printRecords()
+{
+    if (!store.root)
     {
         std::cout << "________EMPTY_TREE________\n";
         return;
@@ -116,59 +93,65 @@ void PrintHandler<recordType, linkType>::printRecords() {
     else
     {
         std::cout << "___________RECORDS__________\n";
-        printRecordsInNode(store.rootIndex);
+        printRecordsInNode(store.root);
         std::cout << "___________________________\n";
     }
 }
 
 template <typename recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printRecordsInNode(linkType& link) {
+void PrintHandler<recordType, linkType>::printRecordsInNode(linkType& link)
+{
     if (!link)
         return;
-    Node<recordType, linkType> node = store.readNode(link);
-    for (int i = 0; i < node.size; i++)
+    auto node = store.readNode(link);
+    for (int i = 0; i < node->size; i++)
     {
-        printRecordsInNode(node.children[i]);
-        printRecord(&(node.data[i]));
+        printRecordsInNode(node->children[i]);
+        printRecord(node->data[i]);
     }
-    printRecordsInNode(node.children[node.size]);
+    printRecordsInNode(node->children[node->size]);
 }
 
 template <typename recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printRecord(recordType& data) {
-    std::cout << "          Record: " << data << std::endl;
+void PrintHandler<recordType, linkType>::printRecord(recordType& dataPtr)
+{
+    std::cout << "          Record: " << dataPtr << std::endl;
 }
 
 template<>
-void PrintHandler<RecordPhone, linkRAM>::printRecord(RecordPhone& data) {
+void PrintHandler<RecordPhone, linkRAM>::printRecord(RecordPhone& dataPtr)
+{
     std::cout << "Record:" << std::endl;
-    std::cout << "          F_Name: " << data.record.firstName << std::endl;
-    std::cout << "          S_Name: " << data.record.secondName << std::endl;
-    std::cout << "          Age   : " << data.record.age << std::endl;
-    std::cout << "          Phone : " << data.record.telephone << std::endl;
+    std::cout << "          F_Name: " << dataPtr.record.firstName << std::endl;
+    std::cout << "          S_Name: " << dataPtr.record.secondName << std::endl;
+    std::cout << "          Age   : " << dataPtr.record.age << std::endl;
+    std::cout << "          Phone : " << dataPtr.record.telephone << std::endl;
 }
 
 template<>
-void PrintHandler<RecordPhone, linkFS>::printRecord(RecordPhone& data) {
+void PrintHandler<RecordPhone, linkFS>::printRecord(RecordPhone& dataPtr)
+{
     std::cout << "Record:" << std::endl;
-    std::cout << "          F_Name: " << data.record.firstName << std::endl;
-    std::cout << "          S_Name: " << data.record.secondName << std::endl;
-    std::cout << "          Age   : " << data.record.age << std::endl;
-    std::cout << "          Phone : " << data.record.telephone << std::endl;
+    std::cout << "          F_Name: " << dataPtr.record.firstName << std::endl;
+    std::cout << "          S_Name: " << dataPtr.record.secondName << std::endl;
+    std::cout << "          Age   : " << dataPtr.record.age << std::endl;
+    std::cout << "          Phone : " << dataPtr.record.telephone << std::endl;
 }
 
 template<>
-void PrintHandler<RecordBirth, linkRAM>::printRecord(RecordBirth& data) {
+void PrintHandler<RecordBirth, linkRAM>::printRecord(RecordBirth& dataPtr)
+{
     std::cout << "Record:" << std::endl;
-    std::cout << "          Name  : " << data.record.name << std::endl;
-    std::cout << "          Birth : " << data.record.birthYear << std::endl;
-    std::cout << "          Phone : " << data.record.telephone << std::endl;
+    std::cout << "          Name  : " << dataPtr.record.name << std::endl;
+    std::cout << "          Birth : " << dataPtr.record.birthYear << std::endl;
+    std::cout << "          Phone : " << dataPtr.record.telephone << std::endl;
 }
 
 template<>
-void PrintHandler<RecordBirth, linkFS>::printRecord(RecordBirth& data) {
+void PrintHandler<RecordBirth, linkFS>::printRecord(RecordBirth& dataPtr)
+{
     std::cout << "Record:" << std::endl;
-    std::cout << "          Name  : " << data.record.name << std::endl;
-    std::cout << "          Birth : " << data.record.birthYear << std::endl;
-    std::cout << "          Phone : " << data.record.telephone << std::endl;
+    std::cout << "          Name  : " << dataPtr.record.name << std::endl;
+    std::cout << "          Birth : " << dataPtr.record.birthYear << std::endl;
+    std::cout << "          Phone : " << dataPtr.record.telephone << std::endl;
 }

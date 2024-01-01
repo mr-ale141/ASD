@@ -25,18 +25,26 @@ public:
 
 class RecordPhone : public Record {
 public:
-    explicit RecordPhone(recordPhone& newRecord)
-    : record(newRecord), Record(newRecord.telephone) {}
-    explicit RecordPhone()
-            : record(*(new recordPhone)) {}
     recordPhone record;
+
+    explicit RecordPhone(recordPhone& newRecord)
+    : Record(newRecord.telephone), record(newRecord) {}
+
+    explicit RecordPhone() : Record()
+    {
+        record = *(new recordPhone);
+    }
 };
 
 class RecordBirth : public Record {
 public:
-    explicit RecordBirth(recordBirth& newRecord)
-    : record(newRecord), Record(newRecord.telephone) {}
-    explicit RecordBirth()
-            : record(*(new recordBirth)) {}
     recordBirth record;
+
+    explicit RecordBirth(recordBirth& newRecord)
+    : Record(newRecord.telephone), record(newRecord) {}
+
+    explicit RecordBirth() : Record()
+    {
+        record = *(new recordBirth);
+    }
 };

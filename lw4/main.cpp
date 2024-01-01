@@ -44,48 +44,82 @@ void initGenerator() {
     generator.engine.seed(device());
 }
 
-void insertRandom(int countNodes) {
+template<typename linkType>
+void insertRandom(BTree<RecordPhone, linkType>& tree, int countNodes) {
     while (countNodes != 0)
     {
         countNodes--;
+
         unsigned long long newKey = getRandomULL(89010000000, 89999999999);
-        while(findRecord(newKey))
+
+        while(tree.findRecord(newKey))
             newKey = getRandomULL(89010000000, 89999999999);
-        recordType* record = new recordType{};
+
+        recordPhone record;
+
         std::string firstName = std::to_string(newKey);
         std::string secondName = std::to_string(newKey);
-        strcpy(record->firstName, firstName.c_str());
-        strcpy(record->secondName, secondName.c_str());
-        record->age = getRandomInt(1, 100);
-        record->telephone = newKey;
-        insert(record);
-        delete record;
+
+        strcpy(record.firstName, firstName.c_str());
+        strcpy(record.secondName, secondName.c_str());
+        record.age = getRandomInt(1, 100);
+        record.telephone = newKey;
+
+        RecordPhone data(record);
+        tree.insert(data);
+    }
+}
+
+template<typename linkType>
+void insertRandom(BTree<RecordBirth, linkType>& tree, int countNodes) {
+    while (countNodes != 0)
+    {
+        countNodes--;
+
+        unsigned long long newKey = getRandomULL(89010000000, 89999999999);
+
+        while(tree.findRecord(newKey))
+            newKey = getRandomULL(89010000000, 89999999999);
+
+        recordBirth record;
+
+        std::string name = std::to_string(newKey);
+
+        strcpy(record.name, name.c_str());
+        record.birthYear = getRandomInt(1900, 2023);
+        record.telephone = newKey;
+
+        RecordBirth data(record);
+        tree.insert(data);
     }
 }
 
 
 void printMenu()
 {
-    std::cout << "1 - insert\n";
+    std::cout << " 1 - insert\n";
     std::cout << "10 - insert tree2\n";
-    std::cout << "2 - print records\n";
+    std::cout << " 2 - print records\n";
     std::cout << "20 - print records tree2\n";
-    std::cout << "3 - find record\n";
-    std::cout << "4 - print tree\n";
+    std::cout << " 3 - find record\n";
+    std::cout << "30 - find record2\n";
+    std::cout << " 4 - print tree\n";
     std::cout << "40 - print tree2\n";
-    std::cout << "5 - del key\n";
-    std::cout << "6 - fill tree\n";
-    std::cout << "7 - print count keys\n";
-    std::cout << "0 - exit\n";
+    std::cout << " 5 - del key in tree\n";
+    std::cout << "50 - del key in tree2\n";
+    std::cout << " 6 - fill tree\n";
+    std::cout << "60 - fill tree2\n";
+    std::cout << " 7 - print count keys tree\n";
+    std::cout << "70 - print count keys tree2\n";
+    std::cout << " 0 - exit\n";
     std::cout << "cmd-> ";
 }
 
 int main()
 {
-    auto* record = new recordType;
-    auto* record2 = new recordType2;
-    auto tree = BTree<recordType, decltype(record->telephone)>();
-    auto tree2 = BTree<recordType2, decltype(record2->telephone)>();
+    initGenerator();
+    auto tree = BTree<RecordPhone, linkFS>();
+    auto tree2 = BTree<RecordBirth, linkFS>();
     int countNodes;
     int i;
     bool ok;
@@ -96,33 +130,41 @@ int main()
     {
         switch (i) {
             case 1:
+            {
+                recordPhone record;
                 std::cout << "Insert First Name: ";
-                std::cin >> record->firstName;
+                std::cin >> record.firstName;
                 std::cout << "Insert Second Name: ";
-                std::cin >> record->secondName;
+                std::cin >> record.secondName;
                 std::cout << "Insert age: ";
-                std::cin >> record->age;
+                std::cin >> record.age;
                 std::cout << "Insert telephone: ";
-                std::cin >> record->telephone;
-                ok = tree.insert(record);
+                std::cin >> record.telephone;
+                RecordPhone data(record);
+                ok = tree.insert(data);
                 if (ok)
                     std::cout << "________INSERT_OK_________\n";
                 else
                     std::cout << "______KEY_NOT_UNIQUE______\n";
                 break;
+            }
             case 10:
+            {
+                recordBirth record2;
                 std::cout << "Insert Name: ";
-                std::cin >> record2->name;
+                std::cin >> record2.name;
                 std::cout << "Insert birth year: ";
-                std::cin >> record2->birthYear;
+                std::cin >> record2.birthYear;
                 std::cout << "Insert telephone: ";
-                std::cin >> record2->telephone;
-                ok = tree2.insert(record2);
+                std::cin >> record2.telephone;
+                RecordBirth data2(record2);
+                ok = tree2.insert(data2);
                 if (ok)
                     std::cout << "________INSERT_OK_________\n";
                 else
                     std::cout << "______KEY_NOT_UNIQUE______\n";
                 break;
+            }
             case 2:
                 tree.printRecords();
                 break;
@@ -130,13 +172,25 @@ int main()
                 tree2.printRecords();
                 break;
             case 3:
+            {
                 std::cout << "\nInsert key for found: ";
                 std::cin >> findKey;
-                record = tree.findRecord(findKey, true);
+                auto data = tree.findRecord(findKey, true);
                 std::cout << "___________RECORD__________\n";
-                tree.printRecord(record);
+                tree.printRecord(*data);
                 std::cout << "___________________________\n";
                 break;
+            }
+            case 30:
+            {
+                std::cout << "\nInsert key for found: ";
+                std::cin >> findKey;
+                auto data = tree2.findRecord(findKey, true);
+                std::cout << "___________RECORD__________\n";
+                tree2.printRecord(*data);
+                std::cout << "___________________________\n";
+                break;
+            }
             case 4:
                 tree.printTree();
                 break;
@@ -144,19 +198,39 @@ int main()
                 tree2.printTree();
                 break;
             case 5:
+            {
                 unsigned long long delKey;
                 std::cout << "\nInsert key for del: ";
                 std::cin >> delKey;
                 tree.del(delKey);
                 break;
+            }
+            case 50:
+            {
+                unsigned long long delKey;
+                std::cout << "\nInsert key for del: ";
+                std::cin >> delKey;
+                tree2.del(delKey);
+                break;
+            }
             case 6:
                 std::cout << "\nInsert count nodes: ";
                 std::cin >> countNodes;
-                tree.insertRandom(countNodes);
+                insertRandom(tree, countNodes);
+                break;
+            case 60:
+                std::cout << "\nInsert count nodes: ";
+                std::cin >> countNodes;
+                insertRandom(tree2, countNodes);
                 break;
             case 7:
                 std::cout << "___________________________\n";
                 std::cout << "Count keys: " << tree.countKeys() << std::endl;
+                std::cout << "___________________________\n";
+                break;
+            case 70:
+                std::cout << "___________________________\n";
+                std::cout << "Count keys: " << tree2.countKeys() << std::endl;
                 std::cout << "___________________________\n";
                 break;
             default:
@@ -165,15 +239,5 @@ int main()
         printMenu();
         std::cin >> i;
     }
-    delete record;
     return 0;
 }
-
-//bool isLeaf;
-//int N;
-//int size;
-//indexType parent;
-//indexType current;
-//keyType *keys;                 [2 * N - 1]
-//indexType *children;           [2 * N]
-//recordType* data;              [2 * N - 1]
