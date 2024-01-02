@@ -118,8 +118,12 @@ void printMenu()
 int main()
 {
     initGenerator();
+    std::cout << "_____Create Tree for RecordPhone in File System____\n";
     auto tree = BTree<RecordPhone, linkFS>();
-    auto tree2 = BTree<RecordBirth, linkFS>();
+    std::cout << "_________________________OK________________________\n";
+    std::cout << "_________Create Tree for RecordBirth in RAM________\n";
+    auto tree2 = BTree<RecordBirth>();
+    std::cout << "_________________________OK________________________\n";
     int countNodes;
     int i;
     bool ok;

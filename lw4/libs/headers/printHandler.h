@@ -17,7 +17,7 @@ public:
     void printRecord(recordType& data);
     void printRecordsInNode(linkType& link);
     void printRecords();
-    void printNode(Node<recordType, linkType>& node);
+    void printNode(Node<recordType>& node);
     void printTab(int count);
     void printNodes(linkType& link, int count);
     void printTree();
@@ -70,7 +70,7 @@ void PrintHandler<recordType, linkType>::printTab(int count)
 }
 
 template <typename recordType, typename linkType>
-void PrintHandler<recordType, linkType>::printNode(Node<recordType, linkType>& node)
+void PrintHandler<recordType, linkType>::printNode(Node<recordType>& node)
 {
     std::cout << "{ ";
     for (int i = 0; i < (2 * store.N - 2); i++)
@@ -119,7 +119,7 @@ void PrintHandler<recordType, linkType>::printRecord(recordType& dataPtr)
 }
 
 template<>
-void PrintHandler<RecordPhone, linkRAM>::printRecord(RecordPhone& dataPtr)
+void PrintHandler<RecordPhone, linkRAM<RecordPhone>>::printRecord(RecordPhone& dataPtr)
 {
     std::cout << "Record:" << std::endl;
     std::cout << "          F_Name: " << dataPtr.record.firstName << std::endl;
@@ -139,7 +139,7 @@ void PrintHandler<RecordPhone, linkFS>::printRecord(RecordPhone& dataPtr)
 }
 
 template<>
-void PrintHandler<RecordBirth, linkRAM>::printRecord(RecordBirth& dataPtr)
+void PrintHandler<RecordBirth, linkRAM<RecordBirth>>::printRecord(RecordBirth& dataPtr)
 {
     std::cout << "Record:" << std::endl;
     std::cout << "          Name  : " << dataPtr.record.name << std::endl;

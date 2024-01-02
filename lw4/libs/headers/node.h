@@ -2,9 +2,7 @@
 #include <memory>
 #include "record.h"
 
-typedef unsigned long long linkFS;
-
-template <typename recordType, typename linkType>
+template <typename recordType>
 class Node
 {
 public:
@@ -14,38 +12,40 @@ public:
     std::unique_ptr<keyType[]> keys;
     std::unique_ptr<recordType[]> data;
 
-    std::weak_ptr<Node<recordType, linkType>> parent;
-    std::weak_ptr<Node<recordType, linkType>> current;
-    std::unique_ptr<linkType[]> children;
-
     explicit Node(int treeN)
-    : isLeaf(false), N(treeN), size(0), parent(nullptr), current(nullptr)
+    : isLeaf(false), N(treeN), size(0)
     {
         keys = std::make_unique<keyType[]>(2 * N - 1);
         data = std::make_unique<recordType[]>(2 * N - 1);
-        children = std::make_unique<linkType[]>(2 * N);
     }
 };
 
 template <typename recordType>
-class Node<recordType, linkFS>
+class NodeRAM : public Node<recordType>
 {
 public:
-    bool isLeaf;
-    int N;
-    int size;
-    std::unique_ptr<keyType[]> keys;
-    std::unique_ptr<recordType[]> data;
+    std::shared_ptr<NodeRAM<recordType>> parent;
+    std::shared_ptr<NodeRAM<recordType>> current;
+    std::unique_ptr<std::shared_ptr<NodeRAM<recordType>>[]> children;
 
-    linkFS parent;
-    linkFS current;
-    std::unique_ptr<linkFS[]> children;
-
-    explicit Node(int treeN)
-    : isLeaf(false), N(treeN), size(0), parent(0ULL), current(0ULL)
+    explicit NodeRAM(int treeN)
+    : Node<recordType>(treeN), parent(nullptr), current(nullptr)
     {
-        keys = std::make_unique<keyType[]>(2 * N - 1);
-        data = std::make_unique<recordType[]>(2 * N - 1);
-        children = std::make_unique<linkFS[]>(2 * N);
+        children = std::make_unique<std::shared_ptr<NodeRAM<recordType>>[]>(2 * treeN);
+    }
+};
+
+template <typename recordType>
+class NodeFS : public Node<recordType>
+{
+public:
+    unsigned long long parent;
+    unsigned long long current;
+    std::unique_ptr<unsigned long long[]> children;
+
+    explicit NodeFS(int treeN)
+    : Node<recordType>(treeN), parent(0ULL), current(0ULL)
+    {
+        children = std::make_unique<unsigned long long[]>(2 * treeN);
     }
 };

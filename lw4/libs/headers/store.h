@@ -3,27 +3,70 @@
 #include <iostream>
 #include "node.h"
 
-typedef std::shared_ptr<void> linkRAM;
+typedef unsigned long long linkFS;
 
-template<typename recordType, typename linkType = linkRAM>
+template<typename recordType>
+using linkRAM = std::shared_ptr<NodeRAM<recordType>>;
+
+template<typename recordType, typename linkType = linkRAM<recordType>>
 class Store
 {
 public:
     int N;
-    std::shared_ptr<Node<recordType, linkType>> root;
-    Store() : root(nullptr)
+    linkType root;
+    linkType nextLink;
+    linkType afterNextLink;
+    Store() : root(nullptr), nextLink(nullptr), afterNextLink(nullptr)
     {
         std::cout << "Insert degree B-Tree:";
         std::cin >> N;
+        nextLink = std::make_shared<NodeRAM<recordType>>(N);
+        afterNextLink = std::make_shared<NodeRAM<recordType>>(N);
     }
-    void writeNode(linkType& link, Node<recordType, linkType>& node)
+    linkType getNextLink()
     {
-        link = std::make_shared<Node<recordType, linkType>>(node.N);
-        *link = node;
+        return nextLink;
     }
-    std::shared_ptr<Node<recordType, linkType>> readNode(linkType& link)
+    linkType getAfterNextLink()
+    {
+        return afterNextLink;
+    }
+    void reset()
+    {
+        root = nullptr;
+    }
+    NodeRAM<recordType> getNewNode()
+    {
+        NodeRAM<recordType> newNode(N);
+        return newNode;
+    }
+    linkType getZeroLink()
+    {
+        return nullptr;
+    }
+    void writeNode(linkType link, NodeRAM<recordType>& node)
+    {
+        if (link == nextLink)
+        {
+            nextLink = afterNextLink;
+            afterNextLink = std::make_shared<NodeRAM<recordType>>(N);
+        }
+        link->isLeaf = node.isLeaf;
+        link->N = node.N;
+        link->size = node.size;
+        link->keys = std::move(node.keys);
+        link->data = std::move(node.data);
+        link->parent = node.parent;
+        link->current = node.current;
+        link->children = std::move(node.children);
+    }
+    linkType readNode(linkType link)
     {
         return link;
+    }
+    void setNewRootIndex(linkType newLink)
+    {
+        root = newLink;
     }
 };
 
@@ -60,7 +103,29 @@ public:
             file.read((char *)&writeIndex, sizeof(writeIndex));
         }
     }
-    void writeNode(linkFS& index, Node<recordType, linkFS>& node)
+    linkFS getNextLink()
+    {
+        return writeIndex;
+    }
+    linkFS getAfterNextLink()
+    {
+        return writeIndex + 1;
+    }
+    void reset()
+    {
+        file.close();
+        createNewFile();
+    }
+    NodeFS<recordType> getNewNode()
+    {
+        NodeFS<recordType> newNode(N);
+        return newNode;
+    }
+    linkFS getZeroLink()
+    {
+        return 0ULL;
+    }
+    void writeNode(linkFS index, NodeFS<recordType>& node)
     {
         file.seekp(index * sizeBlock, this->file.beg);
 
@@ -84,9 +149,11 @@ public:
         if (index == writeIndex)
             incWriteIndex();
     }
-    std::shared_ptr<Node<recordType, linkFS>> readNode(linkFS& index)
+    std::shared_ptr<NodeFS<recordType>> readNode(linkFS index)
     {
-        auto node = std::make_shared<Node<recordType, linkFS>>(N);
+        if (!index) return nullptr;
+
+        auto node = std::make_shared<NodeFS<recordType>>(N);
 
         file.seekg(index * sizeBlock, this->file.beg);
 
@@ -132,7 +199,7 @@ public:
         file.write((char *)&sizeBlock, sizeof(sizeBlock));
         file.write((char *)&writeIndex, sizeof(writeIndex));
     }
-    void setNewRootIndex(linkFS& newIndex)
+    void setNewRootIndex(linkFS newIndex)
     {
         root = newIndex;
         file.seekp(0, this->file.beg);

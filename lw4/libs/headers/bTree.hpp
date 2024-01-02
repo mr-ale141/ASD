@@ -2,7 +2,7 @@
 #include "store.h"
 #include "printHandler.h"
 
-template <typename recordType, typename linkType>
+template <typename recordType, typename linkType = linkRAM<recordType>>
 class BTree
 {
     int N;
@@ -11,11 +11,11 @@ class BTree
 
 public:
     BTree() : store(), printHandler(store) { N = store.N; }
-    std::shared_ptr<Node<recordType, linkType>> findNodeInChildTree(keyType key, linkType& index);
+    linkType findNodeInChildTree(keyType key, linkType& index);
     std::shared_ptr<recordType> findRecordInChildTree(keyType key, linkType& index, int count, bool withPrint);
     std::shared_ptr<recordType> findRecord(keyType key, bool withPrint = false);
-    void insertRecord(Node<recordType, keyType>& node, recordType& record, linkType child = linkType());
-    std::shared_ptr<Node<recordType, linkType>> insertInChildTree(linkType& index, recordType& record);
+    void insertRecord(linkType nodeLink, recordType& record, linkType child = linkType());
+    linkType insertInChildTree(linkType& index, recordType& record);
     void createRootAndInsert(recordType& record, linkType childLeft = linkType(), linkType childRight = linkType());
     bool insert(recordType& record);
     recordType getRecordWithMaxKey(linkType& index);
@@ -61,10 +61,7 @@ void BTree<recordType, linkType>::del(keyType delKey) {
         if (!node)
             std::cout << "Key not found!!!!\n";
         else if (!delInLeaf(currentNode->current, delKey))
-        {
-            store.file.close();
-            store.createNewFile();
-        }
+            store.reset();
     }
     else
         delKeyInChildTree(store.root, delKey);
@@ -78,15 +75,17 @@ void BTree<recordType, linkType>::fixRules(linkType& index) {
     for (i = 0; i < parentNode->size; i++)
         if (node->current == parentNode->children[i]) break;
     int indexParentKey = i;
-    std::shared_ptr<Node<recordType, linkType>> brotherLeft = nullptr;
-    std::shared_ptr<Node<recordType, linkType>> brotherRight = nullptr;
+    linkType brotherLeftLink;
+    linkType brotherRightLink;
     if (indexParentKey == 0 || indexParentKey < parentNode->size)
-        brotherRight = store.readNode(parentNode->children[i + 1]);
+        brotherRightLink = parentNode->children[i + 1];
     else
     {
-        brotherLeft = store.readNode(parentNode->children[i - 1]);
+        brotherLeftLink = parentNode->children[i - 1];
         indexParentKey--;
     }
+    auto brotherLeft = store.readNode(brotherLeftLink);
+    auto brotherRight = store.readNode(brotherRightLink);
     if (brotherRight && brotherRight->size >= N)
     {
         recordType recordFromBrother = brotherRight->data[0];
@@ -143,8 +142,11 @@ void BTree<recordType, linkType>::fixRules(linkType& index) {
                 for (int j = 0; j <= brotherRight->size; j++)
                 {
                     auto updateChildNode = store.readNode(brotherRight->children[j]);
-                    updateChildNode->parent = brotherRight->current;
-                    store.writeNode(updateChildNode->current, *updateChildNode);
+                    if (updateChildNode)
+                    {
+                        updateChildNode->parent = brotherRight->current;
+                        store.writeNode(updateChildNode->current, *updateChildNode);
+                    }
                 }
             }
             store.writeNode(brotherRight->current, *brotherRight);
@@ -182,8 +184,11 @@ void BTree<recordType, linkType>::fixRules(linkType& index) {
                 for (int j = 0; j <= brotherLeft->size; j++)
                 {
                     auto updateChildNode = store.readNode(brotherLeft->children[j]);
-                    updateChildNode->parent = brotherLeft->current;
-                    store.writeNode(updateChildNode->current, *updateChildNode);
+                    if (updateChildNode)
+                    {
+                        updateChildNode->parent = brotherLeft->current;
+                        store.writeNode(updateChildNode->current, *updateChildNode);
+                    }
                 }
             }
             store.writeNode(node->current, *node);
@@ -211,7 +216,8 @@ void BTree<recordType, linkType>::fixRules(linkType& index) {
 
 template<typename recordType, typename linkType>
 void BTree<recordType, linkType>::delKeyInChildTree(linkType& index, keyType delKey) {
-    auto node = findNodeInChildTree(delKey, index);
+    auto nodeLink = findNodeInChildTree(delKey, index);
+    auto node = store.readNode(nodeLink);
     if (!node)
         std::cout << "Key not found!!!!\n";
     else if (node->isLeaf)
@@ -304,17 +310,18 @@ bool BTree<recordType, linkType>::insert(recordType& record) {
         createRootAndInsert(record);
     else
     {
-        auto node = insertInChildTree(store.root, record);
+        linkType nodeLink = insertInChildTree(store.root, record);
+        auto node = store.readNode(nodeLink);
         if (node->size == (2 * N - 1))
         {
             int i;
             auto _keys = std::make_unique<keyType[]>(2 * N - 1);
             auto _children = std::make_unique<linkType[]>(2 * N);
             auto _data = std::make_unique<recordType[]>(2 * N - 1);
-            auto newNode = Node<recordType, keyType>(N);
+            auto newNode = store.getNewNode();
             newNode.isLeaf = node->isLeaf;
-            newNode.parent = store.writeIndex + 1;
-            newNode.current = store.writeIndex;
+            newNode.parent = store.getAfterNextLink();
+            newNode.current = store.getNextLink();
             newNode.size = N - 1;
             for (i = 0; i < (N - 1); i++)
             {
@@ -328,8 +335,11 @@ bool BTree<recordType, linkType>::insert(recordType& record) {
                 for (int j = 0; j <= newNode.size; j++)
                 {
                     auto updateChildNode = store.readNode(newNode.children[j]);
-                    updateChildNode->parent = newNode.current;
-                    store.writeNode(updateChildNode->current, *updateChildNode);
+                    if (updateChildNode)
+                    {
+                        updateChildNode->parent = newNode.current;
+                        store.writeNode(updateChildNode->current, *updateChildNode);
+                    }
                 }
             }
             store.writeNode(newNode.current, newNode);
@@ -362,8 +372,8 @@ void BTree<recordType, linkType>::createRootAndInsert(recordType& record, linkTy
         isLeaf = true;
     else
         isLeaf = false;
-    store.setNewRootIndex(store.writeIndex);
-    Node<recordType, keyType> newRoot(N);
+    store.setNewRootIndex(store.getNextLink());
+    auto newRoot = store.getNewNode();
     newRoot.isLeaf = isLeaf;
     newRoot.size = 1;
     newRoot.current = store.root;
@@ -375,37 +385,38 @@ void BTree<recordType, linkType>::createRootAndInsert(recordType& record, linkTy
 }
 
 template<typename recordType, typename linkType>
-std::shared_ptr<Node<recordType, linkType>> BTree<recordType, linkType>::insertInChildTree(linkType& index, recordType& record) {
-    if (!index)
-        return nullptr;
-    auto node = store.readNode(index);
+linkType BTree<recordType, linkType>::insertInChildTree(linkType& link, recordType& record) {
+    if (!link)
+        return store.getZeroLink();
+    auto node = store.readNode(link);
     if (!node->isLeaf)
     {
-        auto childNode = std::make_shared<Node<recordType, linkType>>(N);
+        linkType childNodeLink;
         int i;
         for (i = 0; i < node->size; i++)
         {
             if (record.key < node->keys[i])
             {
                 linkType next = node->children[i];
-                childNode = insertInChildTree(next, record);
+                childNodeLink = insertInChildTree(next, record);
                 break;
             }
         }
         if (i == node->size)
         {
             linkType next = node->children[node->size];
-            childNode = insertInChildTree(next, record);
+            childNodeLink = insertInChildTree(next, record);
         }
+        auto childNode = store.readNode(childNodeLink);
         if (childNode && childNode->size == (2 * N - 1))
         {
             auto _keys = std::make_unique<keyType[]>(2 * N - 1);
             auto _children = std::make_unique<linkType[]>(2 * N);
             auto _data = std::make_unique<recordType[]>(2 * N - 1);
-            auto newNode = Node<recordType, keyType>(N);
+            auto newNode = store.getNewNode();
             newNode.isLeaf = childNode->isLeaf;
             newNode.parent = node->current;
-            newNode.current = store.writeIndex;
+            newNode.current = store.getNextLink();
             newNode.size = N - 1;
             for (i = 0; i < (N - 1); i++)
             {
@@ -415,14 +426,17 @@ std::shared_ptr<Node<recordType, linkType>> BTree<recordType, linkType>::insertI
             }
             newNode.children[i] = childNode->children[i];
             recordType movedDataUp = childNode->data[i];
-            insertRecord(*node, movedDataUp, newNode.current);
+            insertRecord(node->current, movedDataUp, newNode.current);
             if (!newNode.isLeaf)
             {
                 for (int j = 0; j <= newNode.size; j++)
                 {
                     auto updateChildNode = store.readNode(newNode.children[i]);
-                    updateChildNode->parent = newNode.current;
-                    store.writeNode(updateChildNode->current, *updateChildNode);
+                    if (updateChildNode)
+                    {
+                        updateChildNode->parent = newNode.current;
+                        store.writeNode(updateChildNode->current, *updateChildNode);
+                    }
                 }
             }
             store.writeNode(newNode.current, newNode);
@@ -442,24 +456,24 @@ std::shared_ptr<Node<recordType, linkType>> BTree<recordType, linkType>::insertI
         }
     }
     else
-        insertRecord(*node, record);
-    store.writeNode(node->current, *node);
-    return node;
+        insertRecord(node->current, record);
+    return node->current;
 }
 
 template<typename recordType, typename linkType>
-void BTree<recordType, linkType>::insertRecord(Node<recordType, keyType>& node, recordType& record, linkType child) {
+void BTree<recordType, linkType>::insertRecord(linkType nodeLink, recordType& record, linkType child) {
     int i;
     auto _keys = std::make_unique<keyType[]>(2 * N - 1);
     auto _children = std::make_unique<linkType[]>(2 * N);
     auto _data = std::make_unique<recordType[]>(2 * N - 1);
-    for (i = 0; i < node.size; i++)
+    auto node = store.readNode(nodeLink);
+    for (i = 0; i < node->size; i++)
     {
-        if (record.key > node.keys[i])
+        if (record.key > node->keys[i])
         {
-            _keys[i] = node.keys[i];
-            _children[i] = node.children[i];
-            _data[i] = node.data[i];
+            _keys[i] = node->keys[i];
+            _children[i] = node->children[i];
+            _data[i] = node->data[i];
         }
         else
             break;
@@ -467,22 +481,23 @@ void BTree<recordType, linkType>::insertRecord(Node<recordType, keyType>& node, 
     _keys[i] = record.key;
     _children[i] = child;
     _data[i] = record;
-    node.size++;
-    for (i++; i < node.size; i++)
+    node->size++;
+    for (i++; i < node->size; i++)
     {
-        _keys[i] = node.keys[i-1];
-        _data[i] = node.data[i-1];
-        _children[i] = node.children[i-1];
+        _keys[i] = node->keys[i-1];
+        _data[i] = node->data[i-1];
+        _children[i] = node->children[i-1];
     }
-    _children[i] = node.children[i-1];
-    node.keys = std::move(_keys);
-    node.children = std::move(_children);
-    node.data = std::move(_data);
+    _children[i] = node->children[i-1];
+    node->keys = std::move(_keys);
+    node->children = std::move(_children);
+    node->data = std::move(_data);
+    store.writeNode(node->current, *node);
 }
 
 template<typename recordType, typename linkType>
 std::shared_ptr<recordType> BTree<recordType, linkType>::findRecord(keyType key, bool withPrint) {
-    std::shared_ptr<recordType> record;
+    std::shared_ptr<recordType> record = nullptr;
     if (!store.root)
     {
         if (withPrint)
@@ -530,9 +545,9 @@ std::shared_ptr<recordType> BTree<recordType, linkType>::findRecordInChildTree(k
 }
 
 template<typename recordType, typename linkType>
-std::shared_ptr<Node<recordType, linkType>> BTree<recordType, linkType>::findNodeInChildTree(keyType key, linkType& index) {
+linkType BTree<recordType, linkType>::findNodeInChildTree(keyType key, linkType& index) {
     if (!index)
-        return nullptr;
+        return store.getZeroLink();
     auto node = store.readNode(index);
     linkType next;
     for (int i = 0; i < node->size; i++)
@@ -542,7 +557,7 @@ std::shared_ptr<Node<recordType, linkType>> BTree<recordType, linkType>::findNod
             return findNodeInChildTree(key, next);
         }
         else if (key == node->keys[i])
-            return node;
+            return node->current;
     next = node->children[node->size];
     return findNodeInChildTree(key, next);
 }

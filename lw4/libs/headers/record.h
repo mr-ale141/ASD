@@ -32,7 +32,8 @@ public:
 
     explicit RecordPhone() : Record()
     {
-        record = *(new recordPhone);
+        recordPhone zeroRecord;
+        record = zeroRecord;
     }
 };
 
@@ -45,6 +46,7 @@ public:
 
     explicit RecordBirth() : Record()
     {
-        record = *(new recordBirth);
+        recordBirth zeroRecord;
+        record = zeroRecord;
     }
 };
